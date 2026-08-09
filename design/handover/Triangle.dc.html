@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet" />
+<style>
+body{margin:0;background:#efece5;font-family:'Public Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:oklch(0.55 0.14 295);text-decoration:none}
+a:hover{color:oklch(0.45 0.15 295)}
+</style>
+</helmet>
+<section style="display:flex;flex-direction:column;gap:56px;padding:56px 48px 120px;background:#efece5;color:#17161a">
+
+<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:32px;max-width:1180px">
+<div style="flex:1 1 520px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:center;gap:12px">
+<div style="width:26px;height:26px;position:relative"><div style="position:absolute;inset:0;background:oklch(0.55 0.14 295);clip-path:polygon(50% 0,100% 100%,0 100%)"></div></div>
+<div style="font:700 30px 'Public Sans';letter-spacing:-0.02em">Triangle</div>
+<div style="font:500 11px 'Roboto Mono',monospace;color:#5d5a63;border:1px solid #d8d2c4;padding:3px 7px">1a · v1</div>
+</div>
+<div style="font:400 17px/1.5 'Public Sans';color:#3c3844;max-width:60ch;text-wrap:pretty">A field tool for surveying a private garden with a 20 m tape. Points are triangulated from pairwise distances; features and plants are built on those points. Screens below are static, at phone (375) and desktop widths. The map on <a href="#map-hero">Map view</a> pans and zooms — drag it, scroll to zoom.</div>
+</div>
+<div style="flex:0 0 320px;display:flex;flex-direction:column;gap:10px;background:#faf8f4;border:1px solid #ddd7c9;padding:16px">
+<div style="font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63">Residual quality</div>
+<div style="display:flex;flex-direction:column;gap:7px;font:500 13px 'Roboto Mono',monospace">
+<div style="display:flex;align-items:center;gap:9px"><span style="width:12px;height:12px;border:2px solid oklch(0.62 0.14 150)"></span>≤ 2 cm — solid</div>
+<div style="display:flex;align-items:center;gap:9px"><span style="width:12px;height:12px;border:2px solid oklch(0.75 0.15 75)"></span>≤ 5 cm — check it</div>
+<div style="display:flex;align-items:center;gap:9px"><span style="width:12px;height:12px;border:2px solid oklch(0.58 0.19 25)"></span>&gt; 5 cm — remeasure</div>
+<div style="display:flex;align-items:center;gap:9px"><span style="width:12px;height:12px;background:#17161a"></span>2 distances only — no residual</div>
+</div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;align-items:center;gap:14px"><div style="font:600 11px 'Public Sans';letter-spacing:.16em;text-transform:uppercase;color:#5d5a63">A · Getting in</div><div style="flex:1;height:1px;background:#ddd7c9"></div></div>
+<div style="display:flex;flex-wrap:wrap;gap:28px">
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">01 · Garden home</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:16px 18px 12px;display:flex;align-items:center;justify-content:space-between">
+<div style="font:700 26px 'Public Sans';letter-spacing:-0.02em">Gardens</div>
+<div style="width:44px;height:44px;border:1px solid #ddd7c9;background:#fff;display:flex;align-items:center;justify-content:center;font:400 20px 'Public Sans';color:#3c3844">⋯</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;padding:4px 18px;overflow:hidden">
+<div style="background:#fff;border:1px solid #ddd7c9;display:flex;flex-direction:column">
+<div style="height:132px;border-bottom:1px solid #ddd7c9;overflow:hidden;position:relative">
+<dc-import name="GardenMap" style="position:absolute;inset:0" showLabels="{{ false }}" showScale="{{ false }}" interactive="{{ false }}" hint-size="100%,132px"></dc-import>
+</div>
+<div style="padding:13px 14px;display:flex;flex-direction:column;gap:5px">
+<div style="font:600 17px 'Public Sans'">Sörmland, upper terrace</div>
+<div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">11 points · 34 measurements · 6 features</div>
+<div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">edited 2 h ago</div>
+</div>
+</div>
+<div style="background:#fff;border:1px solid #ddd7c9;padding:13px 14px;display:flex;flex-direction:column;gap:5px">
+<div style="display:flex;align-items:center;gap:9px"><div style="font:600 17px 'Public Sans'">Mother's back plot</div><div style="font:500 10px 'Roboto Mono',monospace;color:oklch(0.45 0.05 295);background:#eee9fb;border:1px solid #ddd3f6;padding:2px 6px">VIEWING</div></div>
+<div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">7 points · 15 measurements</div>
+</div>
+<div style="border:1px dashed #ccc5b4;padding:15px 14px;display:flex;align-items:center;gap:10px;color:#5d5a63;font:500 14px 'Public Sans'"><span style="font-size:18px;color:oklch(0.55 0.14 295)">+</span>New garden</div>
+</div>
+<div style="padding:14px 18px 22px"><div style="height:52px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">New garden</div></div>
+</div>
+<div style="font:400 13px/1.45 'Public Sans';color:#5d5a63;max-width:375px">Each garden card carries its own map thumbnail, so the plot is recognisable before the name is read.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">02 · Onboarding — datum</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:10px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #e6e0d4"><div style="font:400 22px 'Public Sans';color:#3c3844">←</div><div style="font:600 15px 'Public Sans'">New garden</div><div style="margin-left:auto;font:500 11px 'Roboto Mono',monospace;color:#5d5a63">1 / 3</div></div>
+<div style="flex:1;padding:24px 18px;display:flex;flex-direction:column;gap:26px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63">Garden name</div>
+<div style="height:54px;background:#fff;border:1px solid #17161a;display:flex;align-items:center;padding:0 14px;font:500 17px 'Public Sans'">Sörmland, upper terrace<span style="width:2px;height:22px;background:oklch(0.55 0.14 295);margin-left:2px"></span></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63">Elevation datum</div>
+<div style="height:54px;background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;padding:0 14px;font:500 17px 'Public Sans'">Terrace floor = 0.00</div>
+<div style="font:400 13px/1.45 'Public Sans';color:#5d5a63">Every elevation is measured against this. Pick something you can stand on and find again.</div>
+</div>
+<div style="background:#f2eee6;border:1px solid #e6e0d4;padding:14px;display:flex;gap:11px">
+<div style="width:22px;height:22px;flex:none;background:oklch(0.55 0.14 295);clip-path:polygon(50% 0,100% 100%,0 100%)"></div>
+<div style="font:400 13px/1.5 'Public Sans';color:#3c3844">You'll place two points next. The line between them sets the orientation of the whole map — pick a long, straight, permanent edge.</div>
+</div>
+</div>
+<div style="padding:14px 18px 22px"><div style="height:52px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">Continue</div></div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">03 · Onboarding — origin point</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:10px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #e6e0d4"><div style="font:400 22px 'Public Sans';color:#3c3844">←</div><div style="font:600 15px 'Public Sans'">First point</div><div style="margin-left:auto;font:500 11px 'Roboto Mono',monospace;color:#5d5a63">2 / 3</div></div>
+<div style="flex:1;padding:24px 18px;display:flex;flex-direction:column;gap:24px">
+<div style="font:400 15px/1.5 'Public Sans';color:#3c3844">Stand at a corner you'll always be able to find. This becomes the origin of the map.</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63">Point name</div>
+<div style="height:54px;background:#fff;border:1px solid #17161a;display:flex;align-items:center;padding:0 14px;font:500 17px 'Public Sans'">house SW corner</div>
+</div>
+<div style="display:flex;gap:12px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px">
+<div style="font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63">Elevation (m)</div>
+<div style="height:54px;background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;padding:0 14px;font:500 17px 'Roboto Mono',monospace">+0.45</div>
+</div>
+<div style="flex:none;width:54px;display:flex;flex-direction:column;gap:8px">
+<div style="font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63">±</div>
+<div style="height:54px;background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;justify-content:center;font:500 20px 'Roboto Mono',monospace">−</div>
+</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<div style="border:1px solid #ddd7c9;background:#fff;padding:9px 12px;font:500 13px 'Public Sans';color:#3c3844">house SW corner</div>
+<div style="border:1px solid #ddd7c9;background:#fff;padding:9px 12px;font:500 13px 'Public Sans';color:#3c3844">terrace NE</div>
+<div style="border:1px solid #ddd7c9;background:#fff;padding:9px 12px;font:500 13px 'Public Sans';color:#3c3844">pool NW</div>
+<div style="border:1px solid #ddd7c9;background:#fff;padding:9px 12px;font:500 13px 'Public Sans';color:#3c3844">gate</div>
+</div>
+<div style="font:400 12px/1.45 'Public Sans';color:#5d5a63;margin-top:-12px">Common names — tap to fill.</div>
+</div>
+<div style="padding:14px 18px 22px"><div style="height:52px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">Save point</div></div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">04 · Onboarding — the map appears</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column;position:relative">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:10px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #e6e0d4"><div style="font:600 15px 'Public Sans'">Sörmland, upper terrace</div><div style="margin-left:auto;font:500 11px 'Roboto Mono',monospace;color:#5d5a63">3 / 3</div></div>
+<div style="flex:1;position:relative;background:#f7f4ee;overflow:hidden">
+<svg viewBox="0 0 320 400" style="width:100%;height:100%;display:block">
+<defs><pattern id="tg2" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#e6e0d4" stroke-width="0.7" /></pattern></defs>
+<rect width="320" height="400" fill="url(#tg2)" />
+<path d="M84 168 L236 168" stroke="oklch(0.55 0.14 295)" stroke-width="1.4" stroke-dasharray="4 4" />
+<rect x="80" y="164" width="9" height="9" fill="#17161a" /><rect x="231" y="164" width="9" height="9" fill="#17161a" />
+<text x="70" y="152" font-family="Roboto Mono, monospace" font-size="9" fill="#17161a">house SW +0.45</text>
+<text x="196" y="152" font-family="Roboto Mono, monospace" font-size="9" fill="#17161a">house SE +0.45</text>
+<text x="132" y="188" font-family="Roboto Mono, monospace" font-size="10" fill="oklch(0.45 0.15 295)">920 cm</text>
+</svg>
+<div style="position:absolute;left:16px;right:16px;bottom:16px;background:#17161a;color:#faf8f4;padding:16px 16px 18px;display:flex;flex-direction:column;gap:6px">
+<div style="font:600 15px 'Public Sans'">That's your baseline.</div>
+<div style="font:400 13px/1.5 'Public Sans';color:#c9c5bd">Every new point needs at least two distances to land on the map. Keep the tape taut and work outwards.</div>
+</div>
+</div>
+<div style="padding:14px 18px 22px;display:flex;gap:10px"><div style="flex:1;height:52px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">Add a measurement</div></div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div id="map-hero" style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;align-items:center;gap:14px"><div style="font:600 11px 'Public Sans';letter-spacing:.16em;text-transform:uppercase;color:#5d5a63">B · Map view</div><div style="flex:1;height:1px;background:#ddd7c9"></div></div>
+<div style="display:flex;flex-wrap:wrap;gap:28px">
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">05 · Map view — live, drag &amp; zoom</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:8px 14px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e6e0d4">
+<div style="font:600 14px 'Public Sans';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Sörmland, upper terrace</div>
+<div style="display:flex;border:1px solid #17161a;height:36px">
+<div style="width:56px;display:flex;align-items:center;justify-content:center;background:#17161a;color:#faf8f4;font:600 13px 'Public Sans'">Map</div>
+<div style="width:56px;display:flex;align-items:center;justify-content:center;font:600 13px 'Public Sans';color:#3c3844">List</div>
+</div>
+</div>
+<div style="flex:1;position:relative;overflow:hidden">
+<dc-import name="GardenMap" style="position:absolute;inset:0" showConstruction="{{ false }}" hint-size="100%,100%"></dc-import>
+<div style="position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:8px">
+<div style="width:44px;height:44px;background:#faf8f4;border:1px solid #ccc5b4;display:flex;align-items:center;justify-content:center;font:500 16px 'Roboto Mono',monospace">⤢</div>
+<div style="width:44px;height:44px;background:#faf8f4;border:1px solid #ccc5b4;display:flex;align-items:center;justify-content:center;font:500 15px 'Roboto Mono',monospace;color:#3c3844">⋮⋮</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#faf8f4;border-top:1px solid #ddd7c9;padding:10px 14px;display:flex;align-items:center;gap:10px">
+<div style="font:600 10px 'Public Sans';letter-spacing:.12em;text-transform:uppercase;color:#5d5a63;flex:none">Unplaced 2</div>
+<div style="display:flex;gap:8px;flex:1;overflow:hidden">
+<div style="border:1px dashed #b9b1a0;background:#f2eee6;padding:8px 10px;font:500 12px 'Roboto Mono',monospace;color:#3c3844;white-space:nowrap">shed NE · 1 dist</div>
+<div style="border:1px dashed #b9b1a0;background:#f2eee6;padding:8px 10px;font:500 12px 'Roboto Mono',monospace;color:#3c3844;white-space:nowrap">bed E · 0 dist</div>
+</div>
+</div>
+</div>
+<div style="padding:12px 14px 20px;display:flex;gap:10px;border-top:1px solid #e6e0d4">
+<div style="flex:1;height:52px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">+ Measurement</div>
+<div style="width:52px;height:52px;border:1px solid #17161a;background:#fff;display:flex;align-items:center;justify-content:center;font:500 20px 'Roboto Mono',monospace">◇</div>
+<div style="width:52px;height:52px;border:1px solid #17161a;background:#fff;display:flex;align-items:center;justify-content:center;font:500 20px 'Roboto Mono',monospace">☘</div>
+</div>
+</div>
+<div style="font:400 13px/1.45 'Public Sans';color:#5d5a63;max-width:375px">Points that can't be solved yet live in the tray rather than vanishing. Tapping one shows what it still needs.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">06 · Map view — tape overlay on</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:8px 14px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e6e0d4">
+<div style="font:600 14px 'Public Sans';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Sörmland, upper terrace</div>
+<div style="display:flex;border:1px solid #17161a;height:36px">
+<div style="width:56px;display:flex;align-items:center;justify-content:center;background:#17161a;color:#faf8f4;font:600 13px 'Public Sans'">Map</div>
+<div style="width:56px;display:flex;align-items:center;justify-content:center;font:600 13px 'Public Sans';color:#3c3844">List</div>
+</div>
+</div>
+<div style="flex:1;position:relative;overflow:hidden">
+<dc-import name="GardenMap" style="position:absolute;inset:0" showConstruction="{{ true }}" interactive="{{ false }}" hint-size="100%,100%"></dc-import>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#17161a;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+<div style="font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#8d8798">Overlays</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<div style="background:oklch(0.55 0.14 295);color:#fff;padding:9px 12px;font:600 12px 'Public Sans'">Tape lines</div>
+<div style="border:1px solid #45414d;color:#c9c5bd;padding:9px 12px;font:600 12px 'Public Sans'">Elevations</div>
+<div style="border:1px solid #45414d;color:#c9c5bd;padding:9px 12px;font:600 12px 'Public Sans'">Canopies</div>
+<div style="border:1px solid #45414d;color:#c9c5bd;padding:9px 12px;font:600 12px 'Public Sans'">Grid 1 m</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font:400 13px/1.45 'Public Sans';color:#5d5a63;max-width:375px">Construction lines are drawn thin and violet so they read as scaffolding, never as built features.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">07 · Mirror side choice</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:8px 14px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e6e0d4"><div style="font:600 14px 'Public Sans';flex:1">Which side is it on?</div><div style="width:36px;height:36px;border:1px solid #ddd7c9;display:flex;align-items:center;justify-content:center;font:400 18px 'Public Sans';color:#3c3844">✕</div></div>
+<div style="flex:1;position:relative;overflow:hidden">
+<dc-import name="GardenMap" style="position:absolute;inset:0" showMirror="{{ true }}" showPlants="{{ false }}" showLabels="{{ false }}" interactive="{{ false }}" hint-size="100%,100%"></dc-import>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#faf8f4;border-top:1px solid #ddd7c9;padding:16px 14px 18px;display:flex;flex-direction:column;gap:14px">
+<div style="font:400 14px/1.5 'Public Sans';color:#3c3844"><b style="font-weight:600">wall W</b> has two distances, so it fits in two places. Look up — which one are you standing at?</div>
+<div style="display:flex;gap:10px">
+<div style="flex:1;border:2px solid oklch(0.55 0.14 295);background:#eee9fb;padding:13px;display:flex;flex-direction:column;gap:4px">
+<div style="font:600 14px 'Public Sans'">West, by the hedge</div>
+<div style="font:500 11px 'Roboto Mono',monospace;color:#5d5a63">solid marker</div>
+</div>
+<div style="flex:1;border:1px solid #ccc5b4;background:#fff;padding:13px;display:flex;flex-direction:column;gap:4px">
+<div style="font:600 14px 'Public Sans'">South, past the pool</div>
+<div style="font:500 11px 'Roboto Mono',monospace;color:#5d5a63">dashed marker</div>
+</div>
+</div>
+<div style="height:52px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">Place here</div>
+<div style="text-align:center;font:500 12px 'Roboto Mono',monospace;color:#5d5a63">Ask again later</div>
+</div>
+</div>
+</div>
+<div style="font:400 13px/1.45 'Public Sans';color:#5d5a63;max-width:375px">Asked once, on the map, with both candidates drawn. A third measurement later resolves it automatically and the question stops appearing.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">08 · Point detail</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="height:150px;border-bottom:1px solid #ddd7c9;overflow:hidden;position:relative">
+<dc-import name="GardenMap" style="position:absolute;inset:0" showLabels="{{ false }}" showScale="{{ false }}" interactive="{{ false }}" hint-size="100%,150px"></dc-import>
+<div style="position:absolute;top:10px;left:12px;width:36px;height:36px;background:#faf8f4;border:1px solid #ccc5b4;display:flex;align-items:center;justify-content:center;font:400 18px 'Public Sans'">←</div>
+</div>
+<div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+<div style="padding:16px 18px 12px;display:flex;flex-direction:column;gap:9px;border-bottom:1px solid #e6e0d4">
+<div style="display:flex;align-items:center;gap:10px">
+<div style="font:700 23px 'Public Sans';letter-spacing:-0.01em">pool NW</div>
+<div style="display:flex;align-items:center;gap:6px;border:1px solid oklch(0.75 0.15 75);padding:3px 8px;font:500 11px 'Roboto Mono',monospace;color:oklch(0.45 0.1 75)"><span style="width:8px;height:8px;background:oklch(0.75 0.15 75)"></span>3.4 cm</div>
+</div>
+<div style="display:flex;gap:22px;font:500 13px 'Roboto Mono',monospace;color:#3c3844"><span>elev −0.32 m</span><span>4 distances</span></div>
+</div>
+<div style="flex:1;padding:12px 18px;display:flex;flex-direction:column;gap:8px">
+<div style="font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63;padding-bottom:2px">Measurements</div>
+<div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #ddd7c9;padding:12px 13px"><span style="width:9px;height:9px;background:oklch(0.62 0.14 150)"></span><span style="font:500 14px 'Roboto Mono',monospace;flex:1">→ terrace SW</span><span style="font:500 14px 'Roboto Mono',monospace">573</span></div>
+<div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #ddd7c9;padding:12px 13px"><span style="width:9px;height:9px;background:oklch(0.62 0.14 150)"></span><span style="font:500 14px 'Roboto Mono',monospace;flex:1">→ terrace NE</span><span style="font:500 14px 'Roboto Mono',monospace">1502</span></div>
+<div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid oklch(0.75 0.15 75);padding:12px 13px"><span style="width:9px;height:9px;background:oklch(0.75 0.15 75)"></span><span style="font:500 14px 'Roboto Mono',monospace;flex:1">→ pool NE</span><span style="font:500 14px 'Roboto Mono',monospace">520</span></div>
+<div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #ddd7c9;padding:12px 13px"><span style="width:9px;height:9px;background:oklch(0.62 0.14 150)"></span><span style="font:500 14px 'Roboto Mono',monospace;flex:1">→ house SW</span><span style="font:500 14px 'Roboto Mono',monospace">1848</span></div>
+<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #ddd7c9;padding:13px;margin-top:6px"><span style="font:600 14px 'Public Sans'">Lock position</span><div style="width:44px;height:26px;border:1px solid #ccc5b4;background:#f2eee6;display:flex;align-items:center;padding:2px"><div style="width:20px;height:20px;background:#fff;border:1px solid #ccc5b4"></div></div></div>
+<div style="background:#fff;border:1px solid oklch(0.58 0.19 25);padding:13px;display:flex;flex-direction:column;gap:5px;margin-top:2px">
+<div style="font:600 14px 'Public Sans';color:oklch(0.48 0.19 25)">Delete point</div>
+<div style="font:400 12px/1.45 'Public Sans';color:#5d5a63">Removes 4 measurements. <b style="font-weight:600">Pool</b> loses a corner; <b style="font-weight:600">pool SW</b> becomes unplaced.</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;align-items:center;gap:14px"><div style="font:600 11px 'Public Sans';letter-spacing:.16em;text-transform:uppercase;color:#5d5a63">C · Add measurement — the hot path</div><div style="flex:1;height:1px;background:#ddd7c9"></div></div>
+<div style="display:flex;flex-wrap:wrap;gap:28px">
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">09 · Pick A</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:12px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #e6e0d4"><div style="font:400 22px 'Public Sans';color:#3c3844">✕</div><div style="font:600 16px 'Public Sans'">New measurement</div></div>
+<div style="padding:16px 18px 10px;display:flex;align-items:center;gap:10px">
+<div style="flex:1;height:56px;border:2px solid oklch(0.55 0.14 295);background:#fff;display:flex;flex-direction:column;justify-content:center;padding:0 13px"><div style="font:600 9px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:oklch(0.45 0.1 295)">From</div><div style="font:500 15px 'Public Sans';color:#8d8798">pick a point</div></div>
+<div style="font:500 18px 'Roboto Mono',monospace;color:#5d5a63">→</div>
+<div style="flex:1;height:56px;border:1px solid #ddd7c9;background:#f2eee6;display:flex;flex-direction:column;justify-content:center;padding:0 13px"><div style="font:600 9px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63">To</div><div style="font:500 15px 'Public Sans';color:#a09a8d">—</div></div>
+</div>
+<div style="padding:6px 18px 8px;font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63">Recent</div>
+<div style="flex:1;padding:0 18px;display:flex;flex-direction:column;gap:8px;overflow:hidden">
+<div style="height:56px;background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;padding:0 14px;gap:12px"><span style="width:9px;height:9px;background:oklch(0.62 0.14 150)"></span><span style="font:500 16px 'Public Sans';flex:1">pool NW</span><span style="font:500 13px 'Roboto Mono',monospace;color:#5d5a63">−0.32</span></div>
+<div style="height:56px;background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;padding:0 14px;gap:12px"><span style="width:9px;height:9px;background:oklch(0.62 0.14 150)"></span><span style="font:500 16px 'Public Sans';flex:1">pool NE</span><span style="font:500 13px 'Roboto Mono',monospace;color:#5d5a63">−0.32</span></div>
+<div style="height:56px;background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;padding:0 14px;gap:12px"><span style="width:9px;height:9px;background:#17161a"></span><span style="font:500 16px 'Public Sans';flex:1">shed NE</span><span style="font:500 13px 'Roboto Mono',monospace;color:#5d5a63">+0.10</span></div>
+<div style="height:56px;background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;padding:0 14px;gap:12px"><span style="width:9px;height:9px;background:oklch(0.62 0.14 150)"></span><span style="font:500 16px 'Public Sans';flex:1">terrace SW</span><span style="font:500 13px 'Roboto Mono',monospace;color:#5d5a63">0.00</span></div>
+<div style="padding-top:6px;font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63">All points</div>
+<div style="height:56px;background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;padding:0 14px;gap:12px"><span style="width:9px;height:9px;background:oklch(0.62 0.14 150)"></span><span style="font:500 16px 'Public Sans';flex:1">gate</span><span style="font:500 13px 'Roboto Mono',monospace;color:#5d5a63">−0.85</span></div>
+<div style="height:56px;border:1px dashed #ccc5b4;display:flex;align-items:center;padding:0 14px;gap:12px;color:#5d5a63"><span style="font:500 16px 'Public Sans'">+ New point</span></div>
+</div>
+</div>
+<div style="font:400 13px/1.45 'Public Sans';color:#5d5a63;max-width:375px">Recently used points sit on top: in the field you measure from the same anchor several times running.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">10 · Enter distance</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:12px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #e6e0d4"><div style="font:400 22px 'Public Sans';color:#3c3844">✕</div><div style="font:600 16px 'Public Sans'">New measurement</div></div>
+<div style="padding:16px 18px 10px;display:flex;align-items:center;gap:10px">
+<div style="flex:1;height:56px;border:1px solid #17161a;background:#fff;display:flex;flex-direction:column;justify-content:center;padding:0 13px"><div style="font:600 9px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63">From</div><div style="font:600 15px 'Public Sans'">pool NW</div></div>
+<div style="font:500 18px 'Roboto Mono',monospace;color:#5d5a63">→</div>
+<div style="flex:1;height:56px;border:1px solid #17161a;background:#fff;display:flex;flex-direction:column;justify-content:center;padding:0 13px"><div style="font:600 9px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63">To</div><div style="font:600 15px 'Public Sans'">shed NE</div></div>
+</div>
+<div style="padding:14px 18px 12px;display:flex;align-items:baseline;justify-content:center;gap:8px;border-bottom:1px solid #e6e0d4">
+<div style="font:500 52px 'Roboto Mono',monospace;letter-spacing:-0.02em">1264</div><div style="width:2px;height:44px;background:oklch(0.55 0.14 295)"></div><div style="font:500 18px 'Roboto Mono',monospace;color:#5d5a63">cm</div>
+</div>
+<div style="padding:6px 18px 0;text-align:center;font:500 12px 'Roboto Mono',monospace;color:#5d5a63">12.64 m · within tape</div>
+<div style="flex:1;padding:12px 12px 0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<div style="background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;justify-content:center;font:500 26px 'Roboto Mono',monospace">1</div>
+<div style="background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;justify-content:center;font:500 26px 'Roboto Mono',monospace">2</div>
+<div style="background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;justify-content:center;font:500 26px 'Roboto Mono',monospace">3</div>
+<div style="background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;justify-content:center;font:500 26px 'Roboto Mono',monospace">4</div>
+<div style="background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;justify-content:center;font:500 26px 'Roboto Mono',monospace">5</div>
+<div style="background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;justify-content:center;font:500 26px 'Roboto Mono',monospace">6</div>
+<div style="background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;justify-content:center;font:500 26px 'Roboto Mono',monospace">7</div>
+<div style="background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;justify-content:center;font:500 26px 'Roboto Mono',monospace">8</div>
+<div style="background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;justify-content:center;font:500 26px 'Roboto Mono',monospace">9</div>
+<div style="background:#f2eee6;border:1px solid #ddd7c9;display:flex;align-items:center;justify-content:center;font:500 15px 'Roboto Mono',monospace;color:#5d5a63">.</div>
+<div style="background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;justify-content:center;font:500 26px 'Roboto Mono',monospace">0</div>
+<div style="background:#f2eee6;border:1px solid #ddd7c9;display:flex;align-items:center;justify-content:center;font:500 22px 'Roboto Mono',monospace">⌫</div>
+</div>
+<div style="padding:12px;display:flex;gap:8px"><div style="flex:1;height:56px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">Save &amp; next</div><div style="width:100px;height:56px;border:1px solid #17161a;background:#fff;display:flex;align-items:center;justify-content:center;font:600 15px 'Public Sans'">Save</div></div>
+</div>
+<div style="font:400 13px/1.45 'Public Sans';color:#5d5a63;max-width:375px">Save &amp; next keeps point A and clears B, so a run of measurements from one anchor is four taps each.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">11 · Saved — solver result</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:12px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #e6e0d4"><div style="font:400 22px 'Public Sans';color:#3c3844">✕</div><div style="font:600 16px 'Public Sans'">New measurement</div></div>
+<div style="padding:14px 18px;background:#eee9fb;border-bottom:1px solid #ddd3f6;display:flex;flex-direction:column;gap:5px">
+<div style="display:flex;align-items:center;gap:9px"><span style="width:10px;height:10px;background:oklch(0.62 0.14 150)"></span><div style="font:600 15px 'Public Sans'">shed NE is on the map</div></div>
+<div style="font:400 13px/1.45 'Public Sans';color:#3c3844">Third distance closed the fix. Residual 1.2 cm.</div>
+</div>
+<div style="padding:16px 18px 10px;display:flex;align-items:center;gap:10px">
+<div style="flex:1;height:56px;border:1px solid #17161a;background:#fff;display:flex;flex-direction:column;justify-content:center;padding:0 13px"><div style="font:600 9px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63">From</div><div style="font:600 15px 'Public Sans'">pool NW</div></div>
+<div style="font:500 18px 'Roboto Mono',monospace;color:#5d5a63">→</div>
+<div style="flex:1;height:56px;border:2px solid oklch(0.55 0.14 295);background:#fff;display:flex;flex-direction:column;justify-content:center;padding:0 13px"><div style="font:600 9px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:oklch(0.45 0.1 295)">To</div><div style="font:500 15px 'Public Sans';color:#8d8798">pick a point</div></div>
+</div>
+<div style="padding:8px 18px 0;display:flex;flex-direction:column;gap:8px">
+<div style="font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63">Just entered</div>
+<div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #ddd7c9;padding:13px"><span style="font:500 14px 'Roboto Mono',monospace;flex:1">pool NW → shed NE</span><span style="font:500 14px 'Roboto Mono',monospace">1264</span><span style="font:500 12px 'Roboto Mono',monospace;color:oklch(0.55 0.14 295)">undo</span></div>
+</div>
+<div style="flex:1;margin:16px 18px 0;border:1px solid #ddd7c9;overflow:hidden;position:relative"><dc-import name="GardenMap" style="position:absolute;inset:0" showLabels="{{ false }}" interactive="{{ false }}" hint-size="100%,100%"></dc-import></div>
+<div style="padding:14px 18px 20px"><div style="height:52px;border:1px solid #17161a;background:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">Done</div></div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;align-items:center;gap:14px"><div style="font:600 11px 'Public Sans';letter-spacing:.16em;text-transform:uppercase;color:#5d5a63">D · List view</div><div style="flex:1;height:1px;background:#ddd7c9"></div></div>
+<div style="display:flex;flex-wrap:wrap;gap:28px">
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">12 · Points</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:8px 14px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e6e0d4">
+<div style="font:600 14px 'Public Sans';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Sörmland, upper terrace</div>
+<div style="display:flex;border:1px solid #17161a;height:36px"><div style="width:56px;display:flex;align-items:center;justify-content:center;font:600 13px 'Public Sans';color:#3c3844">Map</div><div style="width:56px;display:flex;align-items:center;justify-content:center;background:#17161a;color:#faf8f4;font:600 13px 'Public Sans'">List</div></div>
+</div>
+<div style="display:flex;border-bottom:1px solid #e6e0d4;background:#faf8f4">
+<div style="flex:1;padding:13px 0;text-align:center;font:600 13px 'Public Sans';border-bottom:3px solid oklch(0.55 0.14 295)">Points</div>
+<div style="flex:1;padding:13px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Measure</div>
+<div style="flex:1;padding:13px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Features</div>
+<div style="flex:1;padding:13px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Plants</div>
+</div>
+<div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+<div style="padding:11px 18px;font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63;background:#f2eee6;border-bottom:1px solid #e6e0d4">Unplaced · 2</div>
+<div style="padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:10px;height:10px;border:2px dashed #b9b1a0"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">bed E</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">needs 2 more distances</div></div><span style="font:500 13px 'Roboto Mono',monospace;color:#5d5a63">—</span></div>
+<div style="padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:10px;height:10px;border:2px dashed #b9b1a0"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">shed NE</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">needs 1 more distance</div></div><span style="font:500 13px 'Roboto Mono',monospace;color:#5d5a63">+0.10</span></div>
+<div style="padding:11px 18px;font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63;background:#f2eee6;border-bottom:1px solid #e6e0d4">Placed · 9</div>
+<div style="padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:10px;height:10px;background:oklch(0.62 0.14 150)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">house SW corner</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">5 distances · 0.8 cm</div></div><span style="font:500 13px 'Roboto Mono',monospace">+0.45</span></div>
+<div style="padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:10px;height:10px;background:oklch(0.62 0.14 150)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">house SE corner</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">4 distances · 1.1 cm</div></div><span style="font:500 13px 'Roboto Mono',monospace">+0.45</span></div>
+<div style="padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:10px;height:10px;background:#17161a"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">terrace NE</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">2 distances · no residual</div></div><span style="font:500 13px 'Roboto Mono',monospace">0.00</span></div>
+<div style="padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:10px;height:10px;background:oklch(0.75 0.15 75)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">pool NW</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">4 distances · 3.4 cm</div></div><span style="font:500 13px 'Roboto Mono',monospace">−0.32</span></div>
+<div style="padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:10px;height:10px;background:oklch(0.58 0.19 25)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">wall E end</div><div style="font:500 12px 'Roboto Mono',monospace;color:oklch(0.48 0.19 25)">3 distances · 7.1 cm</div></div><span style="font:500 13px 'Roboto Mono',monospace">+1.20</span></div>
+<div style="padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:10px;height:10px;background:oklch(0.62 0.14 150)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">gate</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">3 distances · 1.6 cm</div></div><span style="font:500 13px 'Roboto Mono',monospace">−0.85</span></div>
+</div>
+<div style="padding:12px 14px 20px;border-top:1px solid #e6e0d4;display:flex;gap:10px"><div style="flex:1;height:52px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">+ Point</div></div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">13 · Measurements</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:8px 14px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e6e0d4">
+<div style="font:600 14px 'Public Sans';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Sörmland, upper terrace</div>
+<div style="display:flex;border:1px solid #17161a;height:36px"><div style="width:56px;display:flex;align-items:center;justify-content:center;font:600 13px 'Public Sans';color:#3c3844">Map</div><div style="width:56px;display:flex;align-items:center;justify-content:center;background:#17161a;color:#faf8f4;font:600 13px 'Public Sans'">List</div></div>
+</div>
+<div style="display:flex;border-bottom:1px solid #e6e0d4">
+<div style="flex:1;padding:13px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Points</div>
+<div style="flex:1;padding:13px 0;text-align:center;font:600 13px 'Public Sans';border-bottom:3px solid oklch(0.55 0.14 295)">Measure</div>
+<div style="flex:1;padding:13px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Features</div>
+<div style="flex:1;padding:13px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Plants</div>
+</div>
+<div style="padding:12px 14px;border-bottom:1px solid #e6e0d4;display:flex;gap:8px">
+<div style="flex:1;height:44px;background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;padding:0 12px;font:500 14px 'Public Sans';color:#8d8798">Filter by point</div>
+<div style="width:44px;height:44px;background:#fff;border:1px solid #ddd7c9;display:flex;align-items:center;justify-content:center;font:500 15px 'Roboto Mono',monospace;color:#3c3844">⇅</div>
+</div>
+<div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+<div style="padding:10px 18px;font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63;background:#f2eee6;border-bottom:1px solid #e6e0d4">Today</div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:9px;height:9px;background:oklch(0.62 0.14 150)"></span><span style="flex:1;font:500 14px 'Roboto Mono',monospace">pool NW → shed NE</span><span style="font:500 15px 'Roboto Mono',monospace">1264</span></div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:9px;height:9px;background:oklch(0.62 0.14 150)"></span><span style="flex:1;font:500 14px 'Roboto Mono',monospace">pool NE → shed NE</span><span style="font:500 15px 'Roboto Mono',monospace">1096</span></div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4;background:#fdf5ee"><span style="width:9px;height:9px;background:oklch(0.75 0.15 75)"></span><span style="flex:1;font:500 14px 'Roboto Mono',monospace">pool NW → pool NE</span><span style="font:500 15px 'Roboto Mono',monospace">520</span></div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:9px;height:9px;background:oklch(0.62 0.14 150)"></span><span style="flex:1;font:500 14px 'Roboto Mono',monospace">terrace SW → pool NW</span><span style="font:500 15px 'Roboto Mono',monospace">573</span></div>
+<div style="padding:10px 18px;font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63;background:#f2eee6;border-bottom:1px solid #e6e0d4">6 August</div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:9px;height:9px;background:oklch(0.58 0.19 25)"></span><span style="flex:1;font:500 14px 'Roboto Mono',monospace">wall E end → gate</span><span style="font:500 15px 'Roboto Mono',monospace">1187</span></div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:9px;height:9px;background:oklch(0.62 0.14 150)"></span><span style="flex:1;font:500 14px 'Roboto Mono',monospace">house SW → house SE</span><span style="font:500 15px 'Roboto Mono',monospace">920</span></div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:9px;height:9px;background:oklch(0.62 0.14 150)"></span><span style="flex:1;font:500 14px 'Roboto Mono',monospace">house SE → terrace NE</span><span style="font:500 15px 'Roboto Mono',monospace">540</span></div>
+</div>
+<div style="padding:12px 14px 20px;border-top:1px solid #e6e0d4"><div style="height:52px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">+ Measurement</div></div>
+</div>
+<div style="font:400 13px/1.45 'Public Sans';color:#5d5a63;max-width:375px">The amber row is the one contributing most to pool NW's 3.4 cm residual — tapping it offers a remeasure.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">14 · Features</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:8px 14px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e6e0d4">
+<div style="font:600 14px 'Public Sans';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Sörmland, upper terrace</div>
+<div style="display:flex;border:1px solid #17161a;height:36px"><div style="width:56px;display:flex;align-items:center;justify-content:center;font:600 13px 'Public Sans';color:#3c3844">Map</div><div style="width:56px;display:flex;align-items:center;justify-content:center;background:#17161a;color:#faf8f4;font:600 13px 'Public Sans'">List</div></div>
+</div>
+<div style="display:flex;border-bottom:1px solid #e6e0d4">
+<div style="flex:1;padding:13px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Points</div>
+<div style="flex:1;padding:13px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Measure</div>
+<div style="flex:1;padding:13px 0;text-align:center;font:600 13px 'Public Sans';border-bottom:3px solid oklch(0.55 0.14 295)">Features</div>
+<div style="flex:1;padding:13px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Plants</div>
+</div>
+<div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+<div style="padding:15px 18px;display:flex;align-items:center;gap:13px;border-bottom:1px solid #e6e0d4"><span style="width:26px;height:8px;background:#2a2730"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">Retention wall, east</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">open · 4 points · 1 curved</div></div></div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:13px;border-bottom:1px solid #e6e0d4"><span style="width:26px;height:16px;border:2px solid #3b6b86;background:#dfe9ef"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">Pool</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">closed · 4 points · rounded</div></div></div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:13px;border-bottom:1px solid #e6e0d4"><span style="width:26px;height:16px;border:2px solid #3c3844;background:#fbf9f4"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">Terrace</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">closed · 4 points</div></div></div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:13px;border-bottom:1px solid #e6e0d4"><span style="width:26px;height:16px;border:2px solid #2a2730;background:#efe9dd"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">House</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">closed · 4 points</div></div></div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:13px;border-bottom:1px solid #e6e0d4"><span style="width:26px;height:8px;background:#a89f8c"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">Path to gate</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">open · 3 points</div></div></div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:13px;border-bottom:1px solid #e6e0d4"><span style="width:26px;height:0;border-top:2px dashed #9c937f"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">Fence, east boundary</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">open · 2 points</div></div></div>
+</div>
+<div style="padding:12px 14px 20px;border-top:1px solid #e6e0d4"><div style="height:52px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">+ Feature</div></div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">15 · Plants</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:8px 14px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e6e0d4">
+<div style="font:600 14px 'Public Sans';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Sörmland, upper terrace</div>
+<div style="display:flex;border:1px solid #17161a;height:36px"><div style="width:56px;display:flex;align-items:center;justify-content:center;font:600 13px 'Public Sans';color:#3c3844">Map</div><div style="width:56px;display:flex;align-items:center;justify-content:center;background:#17161a;color:#faf8f4;font:600 13px 'Public Sans'">List</div></div>
+</div>
+<div style="display:flex;border-bottom:1px solid #e6e0d4">
+<div style="flex:1;padding:13px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Points</div>
+<div style="flex:1;padding:13px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Measure</div>
+<div style="flex:1;padding:13px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Features</div>
+<div style="flex:1;padding:13px 0;text-align:center;font:600 13px 'Public Sans';border-bottom:3px solid oklch(0.55 0.14 295)">Plants</div>
+</div>
+<div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+<div style="padding:15px 18px;display:flex;align-items:center;gap:13px;border-bottom:1px solid #e6e0d4"><span style="width:26px;height:26px;border-radius:50%;border:1.5px dashed #4a7a4e;background:rgba(74,122,78,.13)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">Fig</div><div style="font:400 12px 'Roboto Mono',monospace;color:#5d5a63;font-style:italic">Ficus carica</div></div><div style="text-align:right"><div style="font:500 13px 'Roboto Mono',monospace">⌀ 5.0 m</div><div style="font:500 11px 'Roboto Mono',monospace;color:#5d5a63">at fig point</div></div></div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:13px;border-bottom:1px solid #e6e0d4"><span style="width:22px;height:22px;border-radius:50%;border:1.5px dashed #4a7a4e;background:rgba(74,122,78,.13)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">Olive</div><div style="font:400 12px 'Roboto Mono',monospace;color:#5d5a63;font-style:italic">Olea europaea</div></div><div style="text-align:right"><div style="font:500 13px 'Roboto Mono',monospace">⌀ 4.0 m</div><div style="font:500 11px 'Roboto Mono',monospace;color:#5d5a63">at olive point</div></div></div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:13px;border-bottom:1px solid #e6e0d4"><span style="width:16px;height:16px;border-radius:50%;border:1.5px dashed #4a7a4e;background:rgba(74,122,78,.13)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">Bay laurel</div><div style="font:400 12px 'Roboto Mono',monospace;color:#5d5a63;font-style:italic">Laurus nobilis</div></div><div style="text-align:right"><div style="font:500 13px 'Roboto Mono',monospace">⌀ 2.5 m</div><div style="font:500 11px 'Roboto Mono',monospace;color:oklch(0.55 0.14 295)">no point yet</div></div></div>
+</div>
+<div style="padding:12px 14px 20px;border-top:1px solid #e6e0d4"><div style="height:52px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">+ Plant</div></div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;align-items:center;gap:14px"><div style="font:600 11px 'Public Sans';letter-spacing:.16em;text-transform:uppercase;color:#5d5a63">E · Features, plants, export</div><div style="flex:1;height:1px;background:#ddd7c9"></div></div>
+<div style="display:flex;flex-wrap:wrap;gap:28px">
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">16 · Feature editor — pick type</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:12px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #e6e0d4"><div style="font:400 22px 'Public Sans';color:#3c3844">✕</div><div style="font:600 16px 'Public Sans'">New feature</div></div>
+<div style="padding:18px 18px 10px;font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63">Type</div>
+<div style="padding:0 18px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<div style="height:76px;border:2px solid oklch(0.55 0.14 295);background:#eee9fb;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:0 14px"><span style="width:30px;height:8px;background:#2a2730"></span><span style="font:600 15px 'Public Sans'">Retention wall</span></div>
+<div style="height:76px;border:1px solid #ddd7c9;background:#fff;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:0 14px"><span style="width:30px;height:14px;border:2px solid #3b6b86;background:#dfe9ef"></span><span style="font:600 15px 'Public Sans'">Pool</span></div>
+<div style="height:76px;border:1px solid #ddd7c9;background:#fff;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:0 14px"><span style="width:30px;height:14px;border:2px solid #3c3844;background:#fbf9f4"></span><span style="font:600 15px 'Public Sans'">Terrace</span></div>
+<div style="height:76px;border:1px solid #ddd7c9;background:#fff;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:0 14px"><span style="width:30px;height:10px;background:repeating-linear-gradient(90deg,#3c3844 0 3px,transparent 3px 7px)"></span><span style="font:600 15px 'Public Sans'">Stairs</span></div>
+<div style="height:76px;border:1px solid #ddd7c9;background:#fff;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:0 14px"><span style="width:30px;height:14px;border:2px solid #2a2730;background:#efe9dd"></span><span style="font:600 15px 'Public Sans'">House</span></div>
+<div style="height:76px;border:1px solid #ddd7c9;background:#fff;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:0 14px"><span style="width:30px;height:0;border-top:2px dashed #9c937f"></span><span style="font:600 15px 'Public Sans'">Fence</span></div>
+<div style="height:76px;border:1px solid #ddd7c9;background:#fff;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:0 14px"><span style="width:30px;height:14px;border:2px solid #4a7a4e;background:rgba(74,122,78,.12)"></span><span style="font:600 15px 'Public Sans'">Bed</span></div>
+<div style="height:76px;border:1px solid #ddd7c9;background:#fff;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:0 14px"><span style="width:30px;height:8px;background:#a89f8c"></span><span style="font:600 15px 'Public Sans'">Path</span></div>
+</div>
+<div style="padding:20px 18px 10px;font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63">Name</div>
+<div style="margin:0 18px;height:54px;background:#fff;border:1px solid #17161a;display:flex;align-items:center;padding:0 14px;font:500 17px 'Public Sans'">Retention wall, east</div>
+<div style="flex:1"></div>
+<div style="padding:14px 18px 22px"><div style="height:52px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">Start tapping points</div></div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">17 · Feature editor — trace on map</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:12px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><div style="font:400 22px 'Public Sans';color:#3c3844">←</div><div style="font:600 15px 'Public Sans';flex:1">Retention wall, east</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">4 pts</div></div>
+<div style="flex:1;position:relative;overflow:hidden">
+<dc-import name="GardenMap" style="position:absolute;inset:0" showLabels="{{ false }}" showPlants="{{ false }}" interactive="{{ false }}" hint-size="100%,100%"></dc-import>
+<div style="position:absolute;left:0;right:0;top:0;background:rgba(23,22,26,.9);color:#faf8f4;padding:11px 14px;font:500 13px 'Public Sans'">Tap points in order. Tap the first again to close the loop.</div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#faf8f4;border-top:1px solid #ddd7c9;padding:12px 14px;display:flex;flex-direction:column;gap:11px">
+<div style="display:flex;gap:8px;overflow:hidden">
+<div style="border:1px solid #17161a;background:#fff;padding:9px 11px;font:500 12px 'Roboto Mono',monospace;white-space:nowrap">1 wall W</div>
+<div style="border:1px solid #17161a;background:#fff;padding:9px 11px;font:500 12px 'Roboto Mono',monospace;white-space:nowrap">2 pool SW</div>
+<div style="border:2px solid oklch(0.55 0.14 295);background:#eee9fb;padding:8px 10px;font:500 12px 'Roboto Mono',monospace;white-space:nowrap">3 wall E</div>
+</div>
+<div style="display:flex;align-items:center;gap:8px">
+<div style="font:600 10px 'Public Sans';letter-spacing:.12em;text-transform:uppercase;color:#5d5a63;flex:none">Seg 2–3</div>
+<div style="display:flex;border:1px solid #17161a;height:40px;flex:1">
+<div style="flex:1;display:flex;align-items:center;justify-content:center;font:600 13px 'Public Sans';color:#3c3844">Straight</div>
+<div style="flex:1;display:flex;align-items:center;justify-content:center;background:#17161a;color:#faf8f4;font:600 13px 'Public Sans'">Curved</div>
+</div>
+</div>
+<div style="display:flex;gap:8px">
+<div style="flex:1;height:48px;border:1px solid #17161a;background:#fff;display:flex;align-items:center;justify-content:center;font:600 14px 'Public Sans'">Close loop</div>
+<div style="flex:1;height:48px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 14px 'Public Sans'">Finish open</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font:400 13px/1.45 'Public Sans';color:#5d5a63;max-width:375px">Straight/curved is set per segment, on the segment you just drew, so the choice never becomes a separate editing mode.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">18 · Plant library</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:12px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #e6e0d4"><div style="font:400 22px 'Public Sans';color:#3c3844">✕</div><div style="font:600 16px 'Public Sans'">Species library</div></div>
+<div style="padding:12px 14px;border-bottom:1px solid #e6e0d4"><div style="height:48px;background:#fff;border:1px solid #17161a;display:flex;align-items:center;padding:0 13px;gap:10px;font:500 15px 'Public Sans'">lau<span style="width:2px;height:20px;background:oklch(0.55 0.14 295)"></span></div></div>
+<div style="padding:11px 18px;font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63;background:#f2eee6;border-bottom:1px solid #e6e0d4">3 matches</div>
+<div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+<div style="padding:15px 18px;display:flex;align-items:center;gap:13px;border-bottom:1px solid #e6e0d4;background:#eee9fb"><span style="width:22px;height:22px;flex:none;border-radius:50%;border:1.5px dashed #4a7a4e;background:rgba(74,122,78,.13)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">Bay laurel</div><div style="font:400 12px 'Roboto Mono',monospace;color:#5d5a63;font-style:italic">Laurus nobilis</div></div><span style="font:500 13px 'Roboto Mono',monospace">⌀ 2.5 m</span></div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:13px;border-bottom:1px solid #e6e0d4"><span style="width:26px;height:26px;flex:none;border-radius:50%;border:1.5px dashed #4a7a4e;background:rgba(74,122,78,.13)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">Cherry laurel</div><div style="font:400 12px 'Roboto Mono',monospace;color:#5d5a63;font-style:italic">Prunus laurocerasus</div></div><span style="font:500 13px 'Roboto Mono',monospace">⌀ 4.0 m</span></div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:13px;border-bottom:1px solid #e6e0d4"><span style="width:18px;height:18px;flex:none;border-radius:50%;border:1.5px dashed #4a7a4e;background:rgba(74,122,78,.13)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">Mountain laurel</div><div style="font:400 12px 'Roboto Mono',monospace;color:#5d5a63;font-style:italic">Kalmia latifolia</div></div><span style="font:500 13px 'Roboto Mono',monospace">⌀ 3.0 m</span></div>
+<div style="padding:15px 18px;display:flex;align-items:center;gap:13px;border-bottom:1px solid #e6e0d4;color:#5d5a63"><span style="width:18px;height:18px;flex:none;border-radius:50%;border:1.5px dashed #b9b1a0"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">Add custom species</div><div style="font:500 12px 'Roboto Mono',monospace">name + canopy diameter</div></div></div>
+</div>
+<div style="padding:12px 14px 20px;border-top:1px solid #e6e0d4"><div style="height:52px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">Place Bay laurel</div></div>
+</div>
+<div style="font:400 13px/1.45 'Public Sans';color:#5d5a63;max-width:375px">Circle size in the list is the mature canopy, drawn to the same relative scale it will have on the map.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">19 · Place plant at a point</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:12px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><div style="font:400 22px 'Public Sans';color:#3c3844">←</div><div style="font:600 15px 'Public Sans';flex:1">Bay laurel</div><div style="font:400 12px 'Roboto Mono',monospace;color:#5d5a63;font-style:italic">Laurus nobilis</div></div>
+<div style="flex:1;position:relative;overflow:hidden">
+<dc-import name="GardenMap" style="position:absolute;inset:0" showLabels="{{ false }}" interactive="{{ false }}" hint-size="100%,100%"></dc-import>
+<div style="position:absolute;left:0;right:0;top:0;background:rgba(23,22,26,.9);color:#faf8f4;padding:11px 14px;font:500 13px 'Public Sans'">Tap the point it stands on. Canopy is drawn at 2.5 m.</div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#faf8f4;border-top:1px solid #ddd7c9;padding:14px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #17161a;padding:13px"><span style="width:9px;height:9px;background:oklch(0.62 0.14 150)"></span><span style="flex:1;font:600 15px 'Public Sans'">terrace SW</span><span style="font:500 13px 'Roboto Mono',monospace;color:#5d5a63">0.00</span></div>
+<div style="display:flex;gap:10px">
+<div style="flex:1;height:52px;border:1px solid #17161a;background:#fff;display:flex;align-items:center;justify-content:center;font:600 15px 'Public Sans'">New point here</div>
+<div style="flex:1;height:52px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 15px 'Public Sans'">Place</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">20 · Export</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:12px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #e6e0d4"><div style="font:400 22px 'Public Sans';color:#3c3844">←</div><div style="font:600 16px 'Public Sans'">Export</div></div>
+<div style="height:180px;border-bottom:1px solid #ddd7c9;overflow:hidden;position:relative"><dc-import name="GardenMap" style="position:absolute;inset:0" showScale="{{ false }}" interactive="{{ false }}" hint-size="100%,180px"></dc-import></div>
+<div style="flex:1;padding:18px;display:flex;flex-direction:column;gap:14px">
+<div style="border:1px solid #17161a;background:#fff;padding:15px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:10px"><div style="font:600 17px 'Public Sans';flex:1">DXF</div><div style="font:500 11px 'Roboto Mono',monospace;color:#5d5a63">R2013 · metres</div></div>
+<div style="font:400 13px/1.5 'Public Sans';color:#3c3844">One layer per feature type, points as named blocks with elevation attributes, canopies as circles.</div>
+<div style="display:flex;flex-wrap:wrap;gap:7px;font:500 11px 'Roboto Mono',monospace;color:#3c3844">
+<span style="border:1px solid #ddd7c9;padding:5px 8px">WALL</span><span style="border:1px solid #ddd7c9;padding:5px 8px">POOL</span><span style="border:1px solid #ddd7c9;padding:5px 8px">TERRACE</span><span style="border:1px solid #ddd7c9;padding:5px 8px">HOUSE</span><span style="border:1px solid #ddd7c9;padding:5px 8px">PATH</span><span style="border:1px solid #ddd7c9;padding:5px 8px">FENCE</span><span style="border:1px solid #ddd7c9;padding:5px 8px">POINTS</span><span style="border:1px solid #ddd7c9;padding:5px 8px">PLANTS</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #ddd7c9;padding:13px"><span style="font:500 15px 'Public Sans'">Include tape lines</span><div style="width:44px;height:26px;border:1px solid #ccc5b4;background:#f2eee6;display:flex;align-items:center;padding:2px"><div style="width:20px;height:20px;background:#fff;border:1px solid #ccc5b4"></div></div></div>
+<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #ddd7c9;padding:13px"><span style="font:500 15px 'Public Sans'">Include unplaced points</span><div style="width:44px;height:26px;border:1px solid #ccc5b4;background:#f2eee6;display:flex;align-items:center;padding:2px"><div style="width:20px;height:20px;background:#fff;border:1px solid #ccc5b4"></div></div></div>
+</div>
+<div style="background:#f2eee6;border:1px solid #e6e0d4;padding:13px;font:400 13px/1.5 'Public Sans';color:#3c3844">1 point still has a residual above 5 cm. It will export at its best-fit position.</div>
+</div>
+<div style="padding:14px 18px 22px"><div style="height:52px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">Download DXF</div></div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;align-items:center;gap:14px"><div style="font:600 11px 'Public Sans';letter-spacing:.16em;text-transform:uppercase;color:#5d5a63">F · Constraints — new, from your note</div><div style="flex:1;height:1px;background:#ddd7c9"></div></div>
+<div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start">
+
+<div style="flex:0 0 460px;background:#faf8f4;border:1px solid #ddd7c9;padding:20px;display:flex;flex-direction:column;gap:12px">
+<div style="font:600 17px 'Public Sans'">Right angles and parallels as solver input</div>
+<div style="font:400 14px/1.55 'Public Sans';color:#3c3844;text-wrap:pretty">A constraint is another equation the solver gets for free. A right angle at a corner is worth roughly one distance; a parallel pair fixes the orientation of a whole run. On a rectangular terrace, two edge lengths plus a right angle replace the diagonal — one less tape pull per corner, and the diagonal is usually the awkward one.</div>
+<div style="display:flex;flex-direction:column;gap:9px;font:500 13px 'Roboto Mono',monospace;color:#3c3844">
+<div style="display:flex;gap:11px;align-items:center"><span style="width:22px;height:22px;flex:none;border:2px solid oklch(0.55 0.14 295);border-top:0;border-right:0"></span>90° at a point, between two named neighbours</div>
+<div style="display:flex;gap:11px;align-items:center"><span style="width:22px;flex:none;font:500 15px 'Roboto Mono',monospace;color:oklch(0.55 0.14 295)">≫</span>parallel — two segments carry matching chevrons</div>
+<div style="display:flex;gap:11px;align-items:center"><span style="width:22px;flex:none;font:500 15px 'Roboto Mono',monospace;color:oklch(0.55 0.14 295)">=</span>equal length, for repeated bays or steps</div>
+<div style="display:flex;gap:11px;align-items:center"><span style="width:22px;flex:none;font:500 15px 'Roboto Mono',monospace;color:oklch(0.55 0.14 295)">—</span>colinear, for points along one wall face</div>
+</div>
+<div style="font:400 13px/1.5 'Public Sans';color:#5d5a63;border-top:1px solid #e6e0d4;padding-top:12px">Constraints are assumptions, not measurements, so they carry their own residual. If the tape later disagrees with an assumed right angle, the constraint is what goes amber — the app should never quietly bend real numbers to fit one.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">21 · Add constraint</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:12px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #e6e0d4"><div style="font:400 22px 'Public Sans';color:#3c3844">✕</div><div style="font:600 16px 'Public Sans'">New constraint</div></div>
+<div style="padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:9px">
+<div style="height:62px;border:2px solid oklch(0.55 0.14 295);background:#eee9fb;display:flex;align-items:center;gap:11px;padding:0 13px"><span style="width:18px;height:18px;border:2px solid #17161a;border-top:0;border-right:0"></span><span style="font:600 14px 'Public Sans'">Right angle</span></div>
+<div style="height:62px;border:1px solid #ddd7c9;background:#fff;display:flex;align-items:center;gap:11px;padding:0 13px"><span style="font:500 16px 'Roboto Mono',monospace">≫</span><span style="font:600 14px 'Public Sans'">Parallel</span></div>
+<div style="height:62px;border:1px solid #ddd7c9;background:#fff;display:flex;align-items:center;gap:11px;padding:0 13px"><span style="font:500 16px 'Roboto Mono',monospace">=</span><span style="font:600 14px 'Public Sans'">Equal length</span></div>
+<div style="height:62px;border:1px solid #ddd7c9;background:#fff;display:flex;align-items:center;gap:11px;padding:0 13px"><span style="font:500 16px 'Roboto Mono',monospace">—</span><span style="font:600 14px 'Public Sans'">Colinear</span></div>
+</div>
+<div style="flex:1;position:relative;overflow:hidden;border-top:1px solid #e6e0d4">
+<dc-import name="GardenMap" style="position:absolute;inset:0" showConstraints="{{ true }}" showPlants="{{ false }}" showLabels="{{ false }}" interactive="{{ false }}" hint-size="100%,100%"></dc-import>
+<div style="position:absolute;left:0;right:0;top:0;background:rgba(23,22,26,.9);color:#faf8f4;padding:11px 14px;font:500 13px 'Public Sans'">Tap the corner point, then its two neighbours.</div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#faf8f4;border-top:1px solid #ddd7c9;padding:14px;display:flex;flex-direction:column;gap:11px">
+<div style="display:flex;align-items:center;gap:8px;font:500 13px 'Roboto Mono',monospace"><span style="border:1px solid #17161a;background:#fff;padding:8px 10px">house SE</span><span style="color:#5d5a63">∠</span><span style="border:2px solid oklch(0.55 0.14 295);background:#eee9fb;padding:7px 9px">terrace NE</span><span style="color:#5d5a63">∠</span><span style="border:1px solid #17161a;background:#fff;padding:8px 10px">terrace SW</span></div>
+<div style="background:#f2eee6;border:1px solid #e6e0d4;padding:12px;font:400 13px/1.5 'Public Sans';color:#3c3844">Current tape fit says 89.6°. Applying this moves <b style="font-weight:600">terrace NE</b> by 4 cm and saves one diagonal.</div>
+<div style="height:52px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">Apply constraint</div>
+</div>
+</div>
+</div>
+<div style="font:400 13px/1.45 'Public Sans';color:#5d5a63;max-width:375px">The preview of how far the constraint will shove a point is the important bit — it tells you whether you're correcting the survey or lying to it.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">22 · Constraints on the map</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:8px 14px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e6e0d4">
+<div style="font:600 14px 'Public Sans';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Sörmland, upper terrace</div>
+<div style="display:flex;border:1px solid #17161a;height:36px"><div style="width:56px;display:flex;align-items:center;justify-content:center;background:#17161a;color:#faf8f4;font:600 13px 'Public Sans'">Map</div><div style="width:56px;display:flex;align-items:center;justify-content:center;font:600 13px 'Public Sans';color:#3c3844">List</div></div>
+</div>
+<div style="flex:1;position:relative;overflow:hidden">
+<dc-import name="GardenMap" style="position:absolute;inset:0" showConstraints="{{ true }}" interactive="{{ false }}" hint-size="100%,100%"></dc-import>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#faf8f4;border-top:1px solid #ddd7c9;padding:12px 14px;display:flex;flex-direction:column;gap:9px">
+<div style="font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63">Constraints · 3</div>
+<div style="display:flex;align-items:center;gap:11px;font:500 13px 'Roboto Mono',monospace"><span style="width:9px;height:9px;background:oklch(0.62 0.14 150)"></span><span style="flex:1">90° at terrace NE</span><span style="color:#5d5a63">0.4 cm</span></div>
+<div style="display:flex;align-items:center;gap:11px;font:500 13px 'Roboto Mono',monospace"><span style="width:9px;height:9px;background:oklch(0.62 0.14 150)"></span><span style="flex:1">90° at house SW</span><span style="color:#5d5a63">1.1 cm</span></div>
+<div style="display:flex;align-items:center;gap:11px;font:500 13px 'Roboto Mono',monospace"><span style="width:9px;height:9px;background:oklch(0.75 0.15 75)"></span><span style="flex:1">house edge ∥ terrace edge</span><span style="color:#5d5a63">3.9 cm</span></div>
+</div>
+</div>
+</div>
+<div style="font:400 13px/1.45 'Public Sans';color:#5d5a63;max-width:375px">Standard survey notation: the small square for a right angle, matching chevrons for a parallel pair. Both are drawn in the same violet as the tape lines because both are scaffolding, not built fabric.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;align-items:center;gap:14px"><div style="font:600 11px 'Public Sans';letter-spacing:.16em;text-transform:uppercase;color:#5d5a63">G · Read-only viewer</div><div style="flex:1;height:1px;background:#ddd7c9"></div></div>
+<div style="display:flex;flex-wrap:wrap;gap:28px">
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">23 · Viewer — map</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:8px 14px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e6e0d4">
+<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow:hidden">
+<div style="font:600 14px 'Public Sans';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Mother's back plot</div>
+<div style="display:flex;align-items:center;gap:6px;font:500 10px 'Roboto Mono',monospace;color:#5d5a63;letter-spacing:.06em"><span style="width:7px;height:7px;border:1.5px solid #5d5a63;border-radius:50%"></span>VIEWING</div>
+</div>
+<div style="display:flex;border:1px solid #17161a;height:36px"><div style="width:56px;display:flex;align-items:center;justify-content:center;background:#17161a;color:#faf8f4;font:600 13px 'Public Sans'">Map</div><div style="width:56px;display:flex;align-items:center;justify-content:center;font:600 13px 'Public Sans';color:#3c3844">List</div></div>
+</div>
+<div style="flex:1;position:relative;overflow:hidden">
+<dc-import name="GardenMap" style="position:absolute;inset:0" showScale="{{ true }}" hint-size="100%,100%"></dc-import>
+<div style="position:absolute;top:12px;right:12px;width:44px;height:44px;background:#faf8f4;border:1px solid #ccc5b4;display:flex;align-items:center;justify-content:center;font:500 16px 'Roboto Mono',monospace">⤢</div>
+</div>
+<div style="padding:12px 14px 20px;border-top:1px solid #e6e0d4"><div style="height:52px;border:1px solid #17161a;background:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Public Sans'">Download DXF</div></div>
+</div>
+<div style="font:400 13px/1.45 'Public Sans';color:#5d5a63;max-width:375px">No add button, no tray, no measurement bar — the affordances are absent rather than greyed. Export stays, since reading the plan is the point.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:375px">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">24 · Viewer — list</div>
+<div style="width:375px;height:760px;background:#faf8f4;border:1px solid #ddd7c9;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 18px 4px;font:500 11px 'Roboto Mono',monospace;color:#5d5a63"><span>09:41</span><span>▮▮▮</span></div>
+<div style="padding:8px 14px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e6e0d4">
+<div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow:hidden">
+<div style="font:600 14px 'Public Sans';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Mother's back plot</div>
+<div style="display:flex;align-items:center;gap:6px;font:500 10px 'Roboto Mono',monospace;color:#5d5a63;letter-spacing:.06em"><span style="width:7px;height:7px;border:1.5px solid #5d5a63;border-radius:50%"></span>VIEWING</div>
+</div>
+<div style="display:flex;border:1px solid #17161a;height:36px"><div style="width:56px;display:flex;align-items:center;justify-content:center;font:600 13px 'Public Sans';color:#3c3844">Map</div><div style="width:56px;display:flex;align-items:center;justify-content:center;background:#17161a;color:#faf8f4;font:600 13px 'Public Sans'">List</div></div>
+</div>
+<div style="display:flex;border-bottom:1px solid #e6e0d4">
+<div style="flex:1;padding:13px 0;text-align:center;font:600 13px 'Public Sans';border-bottom:3px solid oklch(0.55 0.14 295)">Points</div>
+<div style="flex:1;padding:13px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Features</div>
+<div style="flex:1;padding:13px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Plants</div>
+</div>
+<div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+<div style="padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><div style="flex:1"><div style="font:600 15px 'Public Sans'">house SW corner</div></div><span style="font:500 13px 'Roboto Mono',monospace">+0.45</span></div>
+<div style="padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><div style="flex:1"><div style="font:600 15px 'Public Sans'">house SE corner</div></div><span style="font:500 13px 'Roboto Mono',monospace">+0.45</span></div>
+<div style="padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><div style="flex:1"><div style="font:600 15px 'Public Sans'">terrace NE</div></div><span style="font:500 13px 'Roboto Mono',monospace">0.00</span></div>
+<div style="padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><div style="flex:1"><div style="font:600 15px 'Public Sans'">pool NW</div></div><span style="font:500 13px 'Roboto Mono',monospace">−0.32</span></div>
+<div style="padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><div style="flex:1"><div style="font:600 15px 'Public Sans'">wall E end</div></div><span style="font:500 13px 'Roboto Mono',monospace">+1.20</span></div>
+<div style="padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><div style="flex:1"><div style="font:600 15px 'Public Sans'">gate</div></div><span style="font:500 13px 'Roboto Mono',monospace">−0.85</span></div>
+</div>
+</div>
+<div style="font:400 13px/1.45 'Public Sans';color:#5d5a63;max-width:375px">Measurements and residuals drop out entirely: a viewer is reading a plan, not auditing a survey. Elevations stay because they describe the garden.</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;align-items:center;gap:14px"><div style="font:600 11px 'Public Sans';letter-spacing:.16em;text-transform:uppercase;color:#5d5a63">H · Desktop, same layout stretched</div><div style="flex:1;height:1px;background:#ddd7c9"></div></div>
+
+<div style="display:flex;flex-direction:column;gap:9px;width:1240px;max-width:100%">
+<div style="font:600 12px 'Roboto Mono',monospace;color:#17161a">25 · Desktop — map with list beside it</div>
+<div style="width:100%;height:780px;background:#faf8f4;border:1px solid #ddd7c9;overflow:hidden;display:flex;flex-direction:column">
+<div style="padding:14px 22px;display:flex;align-items:center;gap:16px;border-bottom:1px solid #e6e0d4">
+<div style="width:20px;height:20px;position:relative"><div style="position:absolute;inset:0;background:oklch(0.55 0.14 295);clip-path:polygon(50% 0,100% 100%,0 100%)"></div></div>
+<div style="font:600 16px 'Public Sans'">Sörmland, upper terrace</div>
+<div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">11 points · 34 measurements · 3 constraints</div>
+<div style="flex:1"></div>
+<div style="height:40px;border:1px solid #17161a;background:#fff;display:flex;align-items:center;padding:0 16px;font:600 14px 'Public Sans'">Export DXF</div>
+<div style="height:40px;background:oklch(0.55 0.14 295);color:#fff;display:flex;align-items:center;padding:0 16px;font:600 14px 'Public Sans'">+ Measurement</div>
+</div>
+<div style="flex:1;display:flex;overflow:hidden">
+<div style="flex:1;position:relative;overflow:hidden;border-right:1px solid #e6e0d4">
+<dc-import name="GardenMap" style="position:absolute;inset:0" showConstraints="{{ true }}" hint-size="100%,100%"></dc-import>
+<div style="position:absolute;top:14px;left:14px;display:flex;gap:8px">
+<div style="background:oklch(0.55 0.14 295);color:#fff;padding:9px 13px;font:600 12px 'Public Sans'">Constraints</div>
+<div style="background:#faf8f4;border:1px solid #ccc5b4;color:#3c3844;padding:9px 13px;font:600 12px 'Public Sans'">Tape lines</div>
+<div style="background:#faf8f4;border:1px solid #ccc5b4;color:#3c3844;padding:9px 13px;font:600 12px 'Public Sans'">Elevations</div>
+<div style="background:#faf8f4;border:1px solid #ccc5b4;color:#3c3844;padding:9px 13px;font:600 12px 'Public Sans'">Canopies</div>
+</div>
+<div style="position:absolute;left:14px;bottom:14px;display:flex;align-items:center;gap:10px;background:rgba(250,248,244,.9);border:1px solid #ddd7c9;padding:9px 12px">
+<div style="font:600 10px 'Public Sans';letter-spacing:.12em;text-transform:uppercase;color:#5d5a63">Unplaced</div>
+<div style="border:1px dashed #b9b1a0;background:#f2eee6;padding:6px 9px;font:500 12px 'Roboto Mono',monospace">shed NE</div>
+<div style="border:1px dashed #b9b1a0;background:#f2eee6;padding:6px 9px;font:500 12px 'Roboto Mono',monospace">bed E</div>
+</div>
+</div>
+<div style="flex:0 0 400px;display:flex;flex-direction:column;overflow:hidden">
+<div style="display:flex;border-bottom:1px solid #e6e0d4">
+<div style="flex:1;padding:14px 0;text-align:center;font:600 13px 'Public Sans';border-bottom:3px solid oklch(0.55 0.14 295)">Points</div>
+<div style="flex:1;padding:14px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Measure</div>
+<div style="flex:1;padding:14px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Features</div>
+<div style="flex:1;padding:14px 0;text-align:center;font:500 13px 'Public Sans';color:#5d5a63">Plants</div>
+</div>
+<div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+<div style="padding:11px 20px;font:600 10px 'Public Sans';letter-spacing:.14em;text-transform:uppercase;color:#5d5a63;background:#f2eee6;border-bottom:1px solid #e6e0d4">Placed · 9</div>
+<div style="padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:10px;height:10px;background:oklch(0.62 0.14 150)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">house SW corner</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">5 distances · 90° · 0.8 cm</div></div><span style="font:500 13px 'Roboto Mono',monospace">+0.45</span></div>
+<div style="padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:10px;height:10px;background:oklch(0.62 0.14 150)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">house SE corner</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">4 distances · 1.1 cm</div></div><span style="font:500 13px 'Roboto Mono',monospace">+0.45</span></div>
+<div style="padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4;background:#eee9fb"><span style="width:10px;height:10px;background:oklch(0.62 0.14 150)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">terrace NE</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">2 distances · 90° · 0.4 cm</div></div><span style="font:500 13px 'Roboto Mono',monospace">0.00</span></div>
+<div style="padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:10px;height:10px;background:oklch(0.62 0.14 150)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">terrace SW</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">4 distances · 1.4 cm</div></div><span style="font:500 13px 'Roboto Mono',monospace">0.00</span></div>
+<div style="padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:10px;height:10px;background:oklch(0.75 0.15 75)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">pool NW</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">4 distances · 3.4 cm</div></div><span style="font:500 13px 'Roboto Mono',monospace">−0.32</span></div>
+<div style="padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:10px;height:10px;background:oklch(0.62 0.14 150)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">pool NE</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">3 distances · 1.9 cm</div></div><span style="font:500 13px 'Roboto Mono',monospace">−0.32</span></div>
+<div style="padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:10px;height:10px;background:oklch(0.58 0.19 25)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">wall E end</div><div style="font:500 12px 'Roboto Mono',monospace;color:oklch(0.48 0.19 25)">3 distances · 7.1 cm</div></div><span style="font:500 13px 'Roboto Mono',monospace">+1.20</span></div>
+<div style="padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e6e0d4"><span style="width:10px;height:10px;background:oklch(0.62 0.14 150)"></span><div style="flex:1"><div style="font:600 15px 'Public Sans'">gate</div><div style="font:500 12px 'Roboto Mono',monospace;color:#5d5a63">3 distances · 1.6 cm</div></div><span style="font:500 13px 'Roboto Mono',monospace">−0.85</span></div>
+</div>
+</div>
+</div>
+</div>
+<div style="font:400 13px/1.45 'Public Sans';color:#5d5a63;max-width:70ch">Same two views, no new layout: the toggle becomes a split, the map takes the extra room, and the field-entry list keeps its full-height rhythm on the right.</div>
+</div>
+</div>
+</section>
+
+</x-dc>
+</body>
+</html>

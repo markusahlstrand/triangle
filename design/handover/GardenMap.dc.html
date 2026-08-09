@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet" />
+</helmet>
+<div ref="{{ wrap }}" style="position:relative;width:100%;height:100%;background:#f7f4ee;overflow:hidden;touch-action:none;cursor:grab">
+<svg viewBox="0 0 320 380" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block">
+<defs>
+<pattern id="tg" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#e6e0d4" stroke-width="0.7" /></pattern>
+</defs>
+<rect x="-400" y="-400" width="1200" height="1200" fill="url(#tg)" />
+<g ref="{{ view }}">
+<path d="M40 -40 L224 -40 L224 40 L40 40 Z" fill="#efe9dd" stroke="#2a2730" stroke-width="3" stroke-linejoin="round" />
+<path d="M40 40 L224 40 L224 148 L40 148 Z" fill="#fbf9f4" stroke="#3c3844" stroke-width="2.2" stroke-linejoin="round" />
+<path d="M100 204 L188 204 Q196 204 196 212 L196 272 Q196 280 188 280 L100 280 Q92 280 92 272 L92 212 Q92 204 100 204 Z" fill="#dfe9ef" stroke="#3b6b86" stroke-width="2.2" />
+<path d="M24 328 Q150 348 272 312" fill="none" stroke="#2a2730" stroke-width="6" stroke-linecap="round" />
+<path d="M284 84 L246 104 L224 122" fill="none" stroke="#a89f8c" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+<path d="M296 8 L296 344" fill="none" stroke="#9c937f" stroke-width="1.6" stroke-dasharray="9 7" />
+<sc-if value="{{ showPlants }}" hint-placeholder-val="{{ true }}">
+<g>
+<circle cx="120" cy="112" r="44" fill="#4a7a4e" fill-opacity="0.13" stroke="#4a7a4e" stroke-width="1.4" stroke-dasharray="4 4" />
+<circle cx="252" cy="240" r="36" fill="#4a7a4e" fill-opacity="0.13" stroke="#4a7a4e" stroke-width="1.4" stroke-dasharray="4 4" />
+<circle cx="120" cy="112" r="3.4" fill="#4a7a4e" />
+<circle cx="252" cy="240" r="3.4" fill="#4a7a4e" />
+</g>
+</sc-if>
+<sc-if value="{{ showConstruction }}" hint-placeholder-val="{{ false }}">
+<g stroke="oklch(0.55 0.14 295)" stroke-width="0.9" stroke-dasharray="3 4" opacity="0.75" fill="none">
+<path d="M40 40 L224 40 M224 40 L224 148 M40 40 L224 148 M40 148 L224 148 M40 148 L92 204 M40 148 L196 204 M92 204 L196 204 M196 204 L196 280 M92 280 L24 328 M196 280 L272 312 M224 40 L284 84" />
+</g>
+</sc-if>
+<sc-if value="{{ showMirror }}" hint-placeholder-val="{{ false }}">
+<g>
+<path d="M92 280 L24 328 M196 280 L24 328" stroke="oklch(0.55 0.14 295)" stroke-width="1.2" stroke-dasharray="3 4" fill="none" />
+<path d="M92 280 L138 356 M196 280 L138 356" stroke="oklch(0.55 0.14 295)" stroke-width="1.2" stroke-dasharray="3 4" fill="none" opacity="0.5" />
+<circle cx="24" cy="328" r="13" fill="oklch(0.55 0.14 295)" fill-opacity="0.18" stroke="oklch(0.55 0.14 295)" stroke-width="2.5" />
+<circle cx="138" cy="356" r="13" fill="none" stroke="oklch(0.55 0.14 295)" stroke-width="2.5" stroke-dasharray="5 4" />
+</g>
+</sc-if>
+<sc-if value="{{ showConstraints }}" hint-placeholder-val="{{ false }}">
+<g fill="none" stroke="oklch(0.55 0.14 295)" stroke-width="1.8">
+<path d="M54 40 L54 54 L40 54" />
+<path d="M210 148 L210 134 L224 134" />
+<path d="M220 88 l5 6 l-5 6 M220 98 l5 6 l-5 6" />
+<path d="M36 88 l5 6 l-5 6 M36 98 l5 6 l-5 6" />
+</g>
+</sc-if>
+<g fill="#17161a">
+<rect x="36" y="36" width="8" height="8" />
+<rect x="220" y="36" width="8" height="8" />
+<rect x="220" y="144" width="8" height="8" />
+<rect x="36" y="144" width="8" height="8" />
+<rect x="88" y="200" width="8" height="8" />
+<rect x="192" y="200" width="8" height="8" />
+<rect x="192" y="276" width="8" height="8" />
+<rect x="88" y="276" width="8" height="8" />
+<rect x="20" y="324" width="8" height="8" />
+<rect x="268" y="308" width="8" height="8" />
+<rect x="280" y="80" width="8" height="8" />
+</g>
+<g fill="none" stroke-width="2">
+<rect x="34" y="34" width="12" height="12" stroke="oklch(0.62 0.14 150)" />
+<rect x="218" y="34" width="12" height="12" stroke="oklch(0.62 0.14 150)" />
+<rect x="86" y="198" width="12" height="12" stroke="oklch(0.75 0.15 75)" />
+<rect x="266" y="306" width="12" height="12" stroke="oklch(0.58 0.19 25)" />
+</g>
+<sc-if value="{{ showLabels }}" hint-placeholder-val="{{ true }}">
+<g font-family="Roboto Mono, monospace" font-size="8.5" fill="#17161a">
+<text x="52" y="30">house SW <tspan fill="#6b6672">+0.45</tspan></text>
+<text x="236" y="30">house SE <tspan fill="#6b6672">+0.45</tspan></text>
+<text x="236" y="166">terrace NE <tspan fill="#6b6672">0.00</tspan></text>
+<text x="52" y="166">terrace SW <tspan fill="#6b6672">0.00</tspan></text>
+<text x="60" y="196">pool NW <tspan fill="#6b6672">−0.32</tspan></text>
+<text x="206" y="196">pool NE <tspan fill="#6b6672">−0.32</tspan></text>
+<text x="34" y="348">wall W <tspan fill="#6b6672">+1.20</tspan></text>
+<text x="222" y="330">wall E <tspan fill="#6b6672">+1.20</tspan></text>
+<text x="240" y="76">gate <tspan fill="#6b6672">−0.85</tspan></text>
+<text x="132" y="66" fill="#4a7a4e">fig · 5.0 m</text>
+<text x="256" y="286" fill="#4a7a4e">olive · 4.0 m</text>
+</g>
+</sc-if>
+</g>
+</svg>
+<sc-if value="{{ showScale }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;left:12px;bottom:12px;display:flex;align-items:center;gap:8px;font:500 11px 'Roboto Mono',monospace;color:#3c3844;background:rgba(250,248,244,.85);padding:5px 8px;border:1px solid #ddd7c9">
+<div style="width:56px;height:0;border-top:2px solid #17161a"></div>2 m</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:420},&quot;showPlants&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;showLabels&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;showScale&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;showConstruction&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;showMirror&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;interactive&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    return {
+      showPlants: p.showPlants ?? true,
+      showLabels: p.showLabels ?? true,
+      showScale: p.showScale ?? false,
+      showConstruction: p.showConstruction ?? false,
+      showMirror: p.showMirror ?? false,
+      showConstraints: p.showConstraints ?? false,
+      wrap: (el) => { this.wrapEl = el; },
+      view: (el) => { this.viewEl = el; }
+    };
+  }
+  componentDidMount() {
+    const wrap = this.wrapEl, view = this.viewEl;
+    if (!wrap || !view || this.props.interactive === false) return;
+    let k = 1, tx = 0, ty = 0, drag = null;
+    const apply = () => view.setAttribute('transform', `translate(${tx} ${ty}) scale(${k})`);
+    wrap.addEventListener('pointerdown', (e) => {
+      drag = { x: e.clientX, y: e.clientY, tx, ty };
+      wrap.setPointerCapture(e.pointerId); wrap.style.cursor = 'grabbing';
+    });
+    wrap.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const s = 320 / wrap.getBoundingClientRect().width;
+      tx = drag.tx + (e.clientX - drag.x) * s; ty = drag.ty + (e.clientY - drag.y) * s; apply();
+    });
+    const end = () => { drag = null; wrap.style.cursor = 'grab'; };
+    wrap.addEventListener('pointerup', end); wrap.addEventListener('pointercancel', end);
+    wrap.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const f = Math.exp(-e.deltaY * 0.0015), nk = Math.min(4, Math.max(0.5, k * f));
+      const r = wrap.getBoundingClientRect(), s = 320 / r.width;
+      const mx = (e.clientX - r.left) * s, my = (e.clientY - r.top) * s;
+      tx = mx - (mx - tx) * (nk / k); ty = my - (my - ty) * (nk / k); k = nk; apply();
+    }, { passive: false });
+  }
+}
+</script>
+</body>
+</html>
