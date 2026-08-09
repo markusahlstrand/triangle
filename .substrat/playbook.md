@@ -373,8 +373,25 @@ only in seed.ts would run locally and silently not deploy. The deploy path is th
 authenticated CLI, and the author never holds a Cloudflare token:
 
 - `substrat login` / `substrat whoami` — authenticate against the control plane.
-- `substrat push` — push the vertical; the version auto-bumps. A **private** (tenant-owned)
-  vertical is admitted automatically; a **listed/shared** one waits for staff admission.
+- `substrat push` — push the vertical. The version comes from `package.json`; a **private**
+  (tenant-owned) vertical is admitted automatically; a **listed/shared** one waits for
+  staff admission.
+
+**Versioning is owned by changesets, not by hand-edits or push's auto-bump.** During
+work, record intent with `pnpm changeset` (patch/minor/major + a summary). Releasing is
+one command:
+
+```sh
+pnpm release   # gates (test, typecheck, boundary-lint) → changeset version → substrat push --promote prod
+```
+
+`changeset version` consumes the pending changesets, bumps `package.json`, and writes
+`CHANGELOG.md`; the push then deploys **that exact version** and points prod at it.
+Never run a bare `substrat push` to release — its auto-bump would advance the registry
+past `package.json` and the two drift apart. Setup (already done in this scaffold):
+`@changesets/cli` in devDependencies, `.changeset/config.json` with
+`"privatePackages": { "version": true, "tag": false }`, and pnpm-workspace.yaml listing
+`packages: ["."]` so changesets can see the root package.
 - `substrat promote <slug> --channel dev|staging|prod --version … [--ack-permissions]
   [--ack-migrations]` — the owner promotes every channel, prod included, for their own
   private vertical.

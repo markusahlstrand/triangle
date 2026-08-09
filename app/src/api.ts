@@ -142,9 +142,19 @@ export async function invoke<O>(op: string, input?: unknown): Promise<O> {
   return (await res.json()) as O;
 }
 
+/**
+ * The dev cast — only the LOCAL dev server has one (the x-principal picker is a
+ * dev seam). Deployed, this returns empty and the picker hides.
+ */
 export async function fetchCast(): Promise<Cast> {
-  const res = await fetch('/api/cast');
-  return (await res.json()) as Cast;
+  try {
+    const res = await fetch('/api/cast');
+    if (!res.ok) return {};
+    const body = (await res.json()) as Cast & { error?: string };
+    return body.error ? {} : body;
+  } catch {
+    return {};
+  }
 }
 
 export function dxfUrl(siteId: string): string {

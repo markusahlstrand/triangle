@@ -133,6 +133,15 @@ async function stub(c: Context<{ Bindings: Env }>): Promise<ScopeStub> {
 
 const app = new Hono<{ Bindings: Env }>();
 
+// The same error envelope as the dev server, so the SPA reads denials as 403s.
+app.onError((err, c) => {
+  if (err instanceof HTTPException) return err.getResponse();
+  const message = err instanceof Error ? err.message : String(err);
+  if (/permission denied/.test(message)) return c.json({ error: message }, 403);
+  if (/not found|unknown scope|unknown operation/.test(message)) return c.json({ error: message }, 404);
+  return c.json({ error: message }, 400);
+});
+
 // Who am I — resolves the caller without invoking anything.
 app.get('/api/me', async (c) => {
   const principal = await authenticatedPrincipal(c.req.raw, c.env);
@@ -145,6 +154,21 @@ app.get('/api/me', async (c) => {
 app.post('/api/invoke', async (c) => {
   const { op, input } = await c.req.json<{ op: string; input?: unknown }>();
   return c.json((await (await stub(c)).invoke(op, input)) ?? null);
+});
+
+// The dev principal picker exists only on the local dev server (src/server.ts) —
+// deployed, the cast is empty and the SPA hides the picker. Real callers arrive
+// through the auth seam above.
+app.get('/api/cast', (c) => c.json({}));
+
+// DXF as a real download (the one route that isn't JSON).
+app.get('/api/sites/:id/export.dxf', async (c) => {
+  const { filename, dxf } = await (
+    await stub(c)
+  ).invoke<{ filename: string; dxf: string }>('garden/export-dxf', { siteId: c.req.param('id') });
+  c.header('Content-Type', 'application/dxf');
+  c.header('Content-Disposition', `attachment; filename="${filename}"`);
+  return c.body(dxf);
 });
 
 // ── /internal/* — the platform-gated management contract ────────────────────
@@ -172,8 +196,12 @@ mountPlatformSurface<Env>(app, {
   },
 });
 
-// Unmatched /api/* fails as JSON; everything else gets a pointer, not a UI —
-// this starter ships no SPA (add one and inline it at build time when you do).
+// Unmatched /api/* fails as JSON. Everything else never reaches the worker in
+// production: the SPA under app/dist rides the platform's NATIVE asset store
+// (#340) — declared in package.json `substrat.runtimeNeeds.assets`, uploaded by
+// `substrat push`, served from the edge with SPA fallback; `runWorkerFirst`
+// keeps only /api/* and /internal/* in front of this worker. The JSON pointer
+// below is the local-dev fallback where no assets are mounted.
 app.all('/api/*', (c) => c.json({ error: `unknown route: ${new URL(c.req.raw.url).pathname}` }, 404));
 app.all('*', (c) =>
   c.json({

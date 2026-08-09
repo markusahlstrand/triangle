@@ -170,3 +170,9 @@ proxies /api). `pnpm test` = solver unit tests + the scenario incl. denials.
 header (markus | vera | nils) — a dev seam that must be replaced with real auth
 before anything is exposed. Dev data lives in `.data/` (regenerated from seed —
 safe to wipe). The app under `app/` uses **npm**, the root uses **pnpm**.
+
+**Release.** Versioning is owned by changesets. Record intent while working
+(`pnpm changeset`); release with `pnpm release` — it runs the gates, `changeset version`
+bumps `package.json` + writes `CHANGELOG.md`, then `substrat push --promote prod`
+deploys that exact version. Never hand-edit the version and never release via a bare
+`substrat push` (its auto-bump drifts the registry away from `package.json`).

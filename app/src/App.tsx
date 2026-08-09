@@ -44,6 +44,7 @@ type SheetState =
 
 export default function App() {
   const [cast, setCast] = useState<Cast>({});
+  const [castLoaded, setCastLoaded] = useState(false);
   const [who, setWho] = useState(principal());
   const [sites, setSites] = useState<SiteSummary[] | null>(null);
   const [siteId, setSiteId] = useState<string | null>(null);
@@ -95,14 +96,22 @@ export default function App() {
         <div className="logo" />
         <div className="title">Triangle</div>
         {readOnly && <span className="viewing-badge">VIEWING</span>}
-        <select value={who} onChange={(e) => switchPrincipal(e.target.value)}>
-          {Object.entries(cast).map(([key, entry]) => (
-            <option key={key} value={key}>
-              {entry.name} · {entry.role}
-            </option>
-          ))}
-        </select>
+        {Object.keys(cast).length > 0 && (
+          <select value={who} onChange={(e) => switchPrincipal(e.target.value)}>
+            {Object.entries(cast).map(([key, entry]) => (
+              <option key={key} value={key}>
+                {entry.name} · {entry.role}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
+      {castLoaded && Object.keys(cast).length === 0 && (
+        <div className="error-bar">
+          No sign-in is wired on this deployment yet — the dev principal picker exists only on the
+          local dev server. Requests will be unauthorized until real auth replaces the dev seam.
+        </div>
+      )}
       {error && <div className="error-bar">{error}</div>}
       {!siteId && (
         <Home

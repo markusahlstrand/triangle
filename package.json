@@ -16,9 +16,19 @@
           "binding": "SWEEPER",
           "class": "SweeperDO"
         }
-      ]
+      ],
+      "build": "npm --prefix app install && npm --prefix app run build",
+      "assets": {
+        "directory": "app/dist",
+        "notFoundHandling": "single-page-application",
+        "runWorkerFirst": [
+          "/api/*",
+          "/internal/*"
+        ]
+      }
     },
-    "tenant": "t-5ra4yxscep"
+    "tenant": "t-5ra4yxscep",
+    "slug": "triangle"
   },
   "scripts": {
     "dev": "concurrently -k \"tsx watch src/server.ts\" \"npm --prefix app run dev\"",
