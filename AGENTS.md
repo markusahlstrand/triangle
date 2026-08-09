@@ -171,6 +171,13 @@ header (markus | vera | nils) — a dev seam that must be replaced with real aut
 before anything is exposed. Dev data lives in `.data/` (regenerated from seed —
 safe to wipe). The app under `app/` uses **npm**, the root uses **pnpm**.
 
+**Deploy.** `substrat push` (slug `triangle`). The SPA ships as NATIVE platform
+assets — `substrat.runtimeNeeds.assets` points at `app/dist`, the `build` command
+produces it, `runWorkerFirst` keeps `/api/*` + `/internal/*` on the worker and
+everything else on the edge with SPA fallback. Never inline assets into the
+worker. Deployed, `/api/cast` is empty → the app hides the principal picker and
+shows the "no sign-in wired" banner until real auth replaces the dev seam.
+
 **Release.** Versioning is owned by changesets. Record intent while working
 (`pnpm changeset`); release with `pnpm release` — it runs the gates, `changeset version`
 bumps `package.json` + writes `CHANGELOG.md`, then `substrat push --promote prod`

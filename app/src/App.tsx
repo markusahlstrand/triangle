@@ -74,7 +74,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    void fetchCast().then(setCast);
+    void fetchCast().then((c) => {
+      setCast(c);
+      setCastLoaded(true);
+    });
   }, []);
   useEffect(() => {
     setSiteId(null);

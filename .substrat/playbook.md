@@ -369,8 +369,16 @@ routes), and package.json already carries the `substrat.runtimeNeeds` block the 
 derives the deploy config from (stores, node-compat, build) — you never author wrangler
 config. When you reshape the vertical, keep `src/provision.ts` the single source of
 MODULES/ROLES: both the dev server and the worker register from it, so a module added
-only in seed.ts would run locally and silently not deploy. The deploy path is the
-authenticated CLI, and the author never holds a Cloudflare token:
+only in seed.ts would run locally and silently not deploy.
+
+**The SPA ships as NATIVE assets (#340)**: declare `runtimeNeeds.assets` (`directory`
+pointing at the built app, `notFoundHandling: "single-page-application"`,
+`runWorkerFirst: ["/api/*", "/internal/*"]`) plus a `build` command that produces the
+directory — `substrat push` builds, hashes and uploads it, and the platform serves it
+from the edge without invoking the worker. Never inline the SPA into the worker bundle;
+that pattern predates the native asset path.
+
+The deploy path is the authenticated CLI, and the author never holds a Cloudflare token:
 
 - `substrat login` / `substrat whoami` — authenticate against the control plane.
 - `substrat push` — push the vertical. The version comes from `package.json`; a **private**
