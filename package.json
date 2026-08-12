@@ -46,17 +46,17 @@
   },
   "dependencies": {
     "@hono/node-server": "^2.1.0",
-    "@substrat-run/adapter-cloudflare": "^0.62.0",
-    "@substrat-run/adapter-sqlite": "^0.62.0",
-    "@substrat-run/contracts": "^0.62.0",
-    "@substrat-run/kernel": "^0.62.0",
+    "@substrat-run/adapter-cloudflare": "^0.63.0",
+    "@substrat-run/adapter-sqlite": "^0.63.0",
+    "@substrat-run/contracts": "^0.63.0",
+    "@substrat-run/kernel": "^0.63.0",
     "@substrat-run/vertical-auth": "link:../substrat/packages/vertical-auth",
-    "@substrat-run/vertical-host": "^0.62.0",
+    "@substrat-run/vertical-host": "^0.63.0",
     "better-sqlite3": "^13.0.3",
     "hono": "^4.13.1"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.31.1",
+    "@changesets/cli": "^3.0.0",
     "@cloudflare/workers-types": "^5.20260811.1",
     "@substrat-run/boundary-lint": "^0.0.6",
     "@types/better-sqlite3": "^9.6.0",
