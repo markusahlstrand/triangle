@@ -157,6 +157,57 @@ export async function fetchCast(): Promise<Cast> {
   }
 }
 
+// ── Session (deployed: OIDC relying-party flow; local dev: the cast) ─────────
+
+export interface Me {
+  key: string;
+  display: string;
+  role: string;
+}
+
+export type Session =
+  | { kind: 'dev'; cast: Cast } // local dev server — the x-principal picker
+  | { kind: 'user'; me: Me } // deployed, signed in at the issuer
+  | { kind: 'anonymous'; needsSetup: boolean }; // deployed, no session yet
+
+/** Where the worker's relying-party flow lives — redirects to the OIDC issuer. */
+export const LOGIN_URL = '/api/auth/login';
+export const LOGOUT_URL = '/api/auth/logout';
+
+/**
+ * Resolve who we are: a non-empty cast means the local dev server (picker mode);
+ * otherwise /api/me decides — signed in, anonymous, or "sign in to claim this
+ * garden" while the owner seat is unclaimed (needs-setup).
+ */
+export async function fetchSession(): Promise<Session> {
+  const cast = await fetchCast();
+  if (Object.keys(cast).length > 0) return { kind: 'dev', cast };
+  try {
+    const res = await fetch('/api/me');
+    if (res.ok) {
+      const body = (await res.json()) as Me & { status?: string };
+      if (body.status === 'needs-setup') return { kind: 'anonymous', needsSetup: true };
+      return { kind: 'user', me: body };
+    }
+  } catch {
+    /* treat as anonymous — the sign-in screen is the safe default */
+  }
+  return { kind: 'anonymous', needsSetup: false };
+}
+
+/** Claim an invite while signed in: binds our issuer identity to the invited principal. */
+export async function acceptInvite(token: string): Promise<void> {
+  const res = await fetch('/api/accept-invite', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({ error: res.statusText }))) as { error?: string };
+    throw new ApiError(body.error ?? res.statusText, res.status);
+  }
+}
+
 export function dxfUrl(siteId: string): string {
   return `/api/sites/${siteId}/export.dxf`;
 }

@@ -160,23 +160,42 @@ via `runSolve` and return what moved; nothing moves silently.
 garden:read), `garden-viewer` (garden:read — sees everything, changes nothing,
 may export DXF). Seed world (`src/seed.ts`): tenant **Casa Markus** (markus =
 owner, vera = viewer) and tenant **Vecino** (nils = its owner, the cross-tenant
-attacker the scenario proves gets nothing). No engines composed; `engine-invites`
-is reserved for viewer invites, `engine-invoicing` for future vivero quotes (no
-VAT concept — a known gap recorded in the design).
+attacker the scenario proves gets nothing). No engines composed; `engine-invoicing`
+is reserved for future vivero quotes (no VAT concept — a known gap recorded in the
+design). Viewer invites ride the identity directory (below), not `engine-invites`.
+
+**Auth (vertical-auth-detach).** Deployed, Triangle is a pure OIDC **relying
+party** — the standard is always a separate issuer (an Auth Server app in the
+team, or external OIDC), never per-app credentials. `src/worker.ts` binds the
+shared `IdentityDO` (`@substrat-run/vertical-auth`, consumed via a `link:` into
+the sibling `../substrat` workspace — it is deliberately unpublished) as the
+`AUTH` store: it holds the `sub → principal` directory, the owner TOFU claim
+(first sign-in claims the seat `onProvision` recorded), invites, and the
+platform-delivered `substrat:auth` config (`onConfigure`) that `authProviderFor`
+builds the RP from per request. The issuer is chosen at APP CREATION in the
+dashboard's Identity section — an install created without it stays unwired.
+`garden/whoami` (no new permission keys) gives the SPA its role hint; `/api/me`
+drives the sign-in screen; viewer invites are `POST /api/invites` (owner-only)
+→ accept link → the claim binds the invitee's issuer identity.
 
 **Run it.** `pnpm dev` starts the API (:8871, tsx watch) + the Vite app (:5174,
 proxies /api). `pnpm test` = solver unit tests + the scenario incl. denials.
-`npx @substrat-run/boundary-lint` must stay green. Dev auth is the `x-principal`
-header (markus | vera | nils) — a dev seam that must be replaced with real auth
-before anything is exposed. Dev data lives in `.data/` (regenerated from seed —
-safe to wipe). The app under `app/` uses **npm**, the root uses **pnpm**.
+`npx @substrat-run/boundary-lint` must stay green. LOCAL dev auth is still the
+`x-principal` header (markus | vera | nils) — worker-side it only exists behind
+`ALLOW_DEV_HEADER`, never set in prod. Dev data lives in `.data/` (regenerated
+from seed — safe to wipe). The app under `app/` uses **npm**, the root uses
+**pnpm**.
 
 **Deploy.** `substrat push` (slug `triangle`). The SPA ships as NATIVE platform
 assets — `substrat.runtimeNeeds.assets` points at `app/dist`, the `build` command
 produces it, `runWorkerFirst` keeps `/api/*` + `/internal/*` on the worker and
 everything else on the edge with SPA fallback. Never inline assets into the
 worker. Deployed, `/api/cast` is empty → the app hides the principal picker and
-shows the "no sign-in wired" banner until real auth replaces the dev seam.
+keys its state off `/api/me`: signed-out → the sign-in screen (→ `/api/auth/login`
+→ issuer → callback → cookie session); `needs-setup` → "first sign-in claims this
+garden". The auth choice is create-time only — re-create the app in the dashboard
+picking the Auth Server; a re-pointed issuer would orphan `sub → principal`
+bindings.
 
 **Release.** Versioning is owned by changesets. Record intent while working
 (`pnpm changeset`); release with `pnpm release` — it runs the gates, `changeset version`

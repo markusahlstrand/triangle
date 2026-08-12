@@ -13,6 +13,10 @@
           "class": "ScopeDO"
         },
         {
+          "binding": "AUTH",
+          "class": "IdentityDO"
+        },
+        {
           "binding": "SWEEPER",
           "class": "SweeperDO"
         }
@@ -41,24 +45,25 @@
     "release": "pnpm test && pnpm typecheck && pnpm lint:boundaries && changeset version && substrat push --promote prod"
   },
   "dependencies": {
-    "@hono/node-server": "^1.13.0",
-    "@substrat-run/adapter-cloudflare": "^0.55.0",
-    "@substrat-run/adapter-sqlite": "^0.55.0",
-    "@substrat-run/contracts": "^0.55.0",
-    "@substrat-run/kernel": "^0.55.0",
-    "@substrat-run/vertical-host": "^0.55.0",
+    "@hono/node-server": "^2.1.0",
+    "@substrat-run/adapter-cloudflare": "^0.62.0",
+    "@substrat-run/adapter-sqlite": "^0.62.0",
+    "@substrat-run/contracts": "^0.62.0",
+    "@substrat-run/kernel": "^0.62.0",
+    "@substrat-run/vertical-auth": "link:../substrat/packages/vertical-auth",
+    "@substrat-run/vertical-host": "^0.62.0",
     "better-sqlite3": "^13.0.3",
-    "hono": "^4.6.0"
+    "hono": "^4.13.1"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",
-    "@cloudflare/workers-types": "^4.20250109.0",
+    "@cloudflare/workers-types": "^5.20260811.1",
     "@substrat-run/boundary-lint": "^0.0.6",
     "@types/better-sqlite3": "^9.6.0",
-    "@types/node": "^22.0.0",
-    "concurrently": "^9.0.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.6.0",
-    "vitest": "^3.0.0"
+    "@types/node": "^26.2.0",
+    "concurrently": "^10.0.4",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   }
 }
