@@ -167,8 +167,8 @@ design). Viewer invites ride the identity directory (below), not `engine-invites
 **Auth (vertical-auth-detach).** Deployed, Triangle is a pure OIDC **relying
 party** — the standard is always a separate issuer (an Auth Server app in the
 team, or external OIDC), never per-app credentials. `src/worker.ts` binds the
-shared `IdentityDO` (`@substrat-run/vertical-auth`, consumed via a `link:` into
-the sibling `../substrat` workspace — it is deliberately unpublished) as the
+shared `IdentityDO` (`@substrat-run/vertical-auth`, from the registry — published
+since 0.7.0; substrat-run/substrat#631 tracks its release train) as the
 `AUTH` store: it holds the `sub → principal` directory, the owner TOFU claim
 (first sign-in claims the seat `onProvision` recorded), invites, and the
 platform-delivered `substrat:auth` config (`onConfigure`) that `authProviderFor`
