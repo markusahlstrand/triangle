@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@hono/node-server':
         specifier: ^2.1.0
-        version: 2.1.0(hono@4.13.1)
+        version: 2.1.0(hono@4.13.2)
       '@substrat-run/adapter-cloudflare':
         specifier: ^0.63.0
         version: 0.63.0
@@ -18,8 +18,8 @@ importers:
         specifier: ^0.63.0
         version: 0.63.0
       '@substrat-run/contracts':
-        specifier: ^0.63.0
-        version: 0.63.0
+        specifier: ^0.64.0
+        version: 0.64.0
       '@substrat-run/kernel':
         specifier: ^0.63.0
         version: 0.63.0
@@ -33,18 +33,18 @@ importers:
         specifier: ^13.0.3
         version: 13.0.3
       hono:
-        specifier: ^4.13.1
-        version: 4.13.1
+        specifier: ^4.13.2
+        version: 4.13.2
     devDependencies:
       '@changesets/cli':
         specifier: ^3.0.0
         version: 3.0.0
       '@cloudflare/workers-types':
-        specifier: ^5.20260811.1
-        version: 5.20260811.1
+        specifier: ^5.20260813.1
+        version: 5.20260813.1
       '@substrat-run/boundary-lint':
-        specifier: ^0.0.6
-        version: 0.0.6
+        specifier: ^0.0.7
+        version: 0.0.7
       '@types/better-sqlite3':
         specifier: ^9.6.0
         version: 9.6.0
@@ -135,8 +135,8 @@ packages:
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
     engines: {node: '>= 20.12.0'}
 
-  '@cloudflare/workers-types@5.20260811.1':
-    resolution: {integrity: sha512-jS3o9240P8t7Y/2lecXPC0rGdODZgHyFTWy9Asdm8htE2Uepx4PAvbcVo3EC0r8wZuv6rahDc1MMj+3nDZj/QA==}
+  '@cloudflare/workers-types@5.20260813.1':
+    resolution: {integrity: sha512-RQNfm7xD10hNHEQZFxQPmyGMJ9+aDGPcdFZ0x1LtmjRoLFcgZkGvfaqJAbOMQBAUFSESO3bYJS4p9mOLv28Ihg==}
 
   '@esbuild/aix-ppc64@0.28.2':
     resolution: {integrity: sha512-XExcO+dvLKvVtNTibSTBej1NCAbaGhWn9Ww1ZPx80qsahhPFe/8jgWP0IchNe0F3HwkU7n8ejhH8bjonqht8mQ==}
@@ -473,12 +473,15 @@ packages:
   '@substrat-run/adapter-sqlite@0.63.0':
     resolution: {integrity: sha512-G6w4hRpbUILUZ/m6fBDW/b6tm/MGb5GGJG0W+8tTCbkqsr+M7CiycVnu+j4KJzvUwDbETW49/e8rBdWd4+l4xw==}
 
-  '@substrat-run/boundary-lint@0.0.6':
-    resolution: {integrity: sha512-2F064Jz3Mlg1kLkSkhmRM6nII7JOj+xTYPWFebUbD5eYiRh2knZ3R6I93b3sx9wY1+ZVgFqDbxUNa4L7pq3MYg==}
+  '@substrat-run/boundary-lint@0.0.7':
+    resolution: {integrity: sha512-FK+asm4Cw/aPbOtMW816WLojloNdfwLN+u/OEG8QvR4s6QJMTZqDvUyRb17vOlfZGnTTccyCb5XdqtX3h1jQHA==}
     hasBin: true
 
   '@substrat-run/contracts@0.63.0':
     resolution: {integrity: sha512-Pnngf7F34MPk7+w2IDR6AZg2gMRq/Rvp1XXL+Y5ayIecFxTy3Do8+wbRQHj7C1L8DY2qToOfnVPttV4rX/SjCw==}
+
+  '@substrat-run/contracts@0.64.0':
+    resolution: {integrity: sha512-lluDCV2h/1po/YX1IvmvFSKu1uGyzF5vjln3jXq5HKWXOovhQ0rIxF5Y5ht0vUKpFqjepFntCzXX8p9xtKqu9g==}
 
   '@substrat-run/kernel@0.63.0':
     resolution: {integrity: sha512-OGu/LW1HQpAavrrY71AMHEVf4buIgIkrlUKOEiKNxBPnpqppblsJj8IqieVFEoBJ5xdATUNu5pbu9DN2d9W5cw==}
@@ -650,8 +653,8 @@ packages:
   '@vitest/utils@4.1.10':
     resolution: {integrity: sha512-fy9am/HWxbaGt/Sawrp90vt6Y6jQwf1RX77cz3uwoJwJVMli/e1IEwRPnMNJ7vKfPTwo0diXifkpPvwH9v7nGA==}
 
-  ansi-regex@6.2.2:
-    resolution: {integrity: sha512-Bq3SmSpyFHaWjPk8If9yc6svM8c56dB5BAtW4Qbw5jHTwwXXcTLoRMkpDJp6VL0XzlWaCHTXrkFURMYmD0sLqg==}
+  ansi-regex@6.3.0:
+    resolution: {integrity: sha512-WpDfL7NO6j7tH88IDBNVdUJxDh9nmCteAVW9dsep846XdwF4naCBK+/tGLX3KJgcpgMRXCFlTM2hKGoK9FsdrQ==}
     engines: {node: '>=12'}
 
   ansi-styles@6.2.3:
@@ -743,8 +746,8 @@ packages:
     resolution: {integrity: sha512-QRbvDIbx6YklUe6RxeTeleMR0yv3cYH6PsPZHcnVn7xv7zO1BHN8r0XETu8n6Ye3Q+ahtSarc3WgtNWmehIBfA==}
     engines: {node: '>=18'}
 
-  hono@4.13.1:
-    resolution: {integrity: sha512-kdJoFVv2xmayw6cY09H7AbMJMt8Jn5jdlEdXsP7AGBdF2DIptVlKlOLKXP41yPip4/a3yQPv9gVcJYI8YY04dw==}
+  hono@4.13.2:
+    resolution: {integrity: sha512-JydRilDRkYBQMt9qR9U92mXxmbGqsqSn/IKOrh4e7/gEbn+0zSr8igTu0obwJoNGN4sez28DIql7FBHWydoJpA==}
     engines: {node: '>=16.9.0'}
 
   human-id@4.2.0:
@@ -771,8 +774,8 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
-  node-addon-api@8.9.1:
-    resolution: {integrity: sha512-4eUQWVPCUUUiBjLnHS3cXWeC6ryoPUc0U3rP7IuzapoGbzMqd/r6KKO0clr0b+snQhsrueFEhCZDdK+LK7hxKg==}
+  node-addon-api@8.9.2:
+    resolution: {integrity: sha512-VijLXbi3UACN69I0JVXJsX4tjACjNoQDgv2gTF6sx2wWEi8tkSg2eX8p5gSIFi8z2+DL3oHmY6OyKce38SDolg==}
     engines: {node: ^18 || ^20 || >= 21}
 
   obug@2.1.4:
@@ -1108,7 +1111,7 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@cloudflare/workers-types@5.20260811.1': {}
+  '@cloudflare/workers-types@5.20260813.1': {}
 
   '@esbuild/aix-ppc64@0.28.2':
     optional: true
@@ -1188,9 +1191,9 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@hono/node-server@2.1.0(hono@4.13.1)':
+  '@hono/node-server@2.1.0(hono@4.13.2)':
     dependencies:
-      hono: 4.13.1
+      hono: 4.13.2
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
@@ -1302,9 +1305,13 @@ snapshots:
       '@substrat-run/kernel': 0.63.0
       better-sqlite3: 13.0.3
 
-  '@substrat-run/boundary-lint@0.0.6': {}
+  '@substrat-run/boundary-lint@0.0.7': {}
 
   '@substrat-run/contracts@0.63.0':
+    dependencies:
+      zod: 4.4.3
+
+  '@substrat-run/contracts@0.64.0':
     dependencies:
       zod: 4.4.3
 
@@ -1316,7 +1323,7 @@ snapshots:
     dependencies:
       '@substrat-run/contracts': 0.63.0
       '@substrat-run/kernel': 0.63.0
-      hono: 4.13.1
+      hono: 4.13.2
 
   '@types/better-sqlite3@9.6.0':
     dependencies:
@@ -1436,7 +1443,7 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.1.1
 
-  ansi-regex@6.2.2: {}
+  ansi-regex@6.3.0: {}
 
   ansi-styles@6.2.3: {}
 
@@ -1444,7 +1451,7 @@ snapshots:
 
   better-sqlite3@13.0.3:
     dependencies:
-      node-addon-api: 8.9.1
+      node-addon-api: 8.9.2
 
   cac@7.0.0: {}
 
@@ -1531,7 +1538,7 @@ snapshots:
 
   get-east-asian-width@1.6.0: {}
 
-  hono@4.13.1: {}
+  hono@4.13.2: {}
 
   human-id@4.2.0: {}
 
@@ -1552,7 +1559,7 @@ snapshots:
 
   nanoid@3.3.18: {}
 
-  node-addon-api@8.9.1: {}
+  node-addon-api@8.9.2: {}
 
   obug@2.1.4: {}
 
@@ -1630,7 +1637,7 @@ snapshots:
 
   strip-ansi@7.2.0:
     dependencies:
-      ansi-regex: 6.2.2
+      ansi-regex: 6.3.0
 
   supports-color@10.2.2: {}
 
