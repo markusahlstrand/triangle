@@ -50,7 +50,7 @@
     "@substrat-run/adapter-sqlite": "^0.63.0",
     "@substrat-run/contracts": "^0.64.0",
     "@substrat-run/kernel": "^0.63.0",
-    "@substrat-run/vertical-auth": "link:../substrat/packages/vertical-auth",
+    "@substrat-run/vertical-auth": "^0.7.0",
     "@substrat-run/vertical-host": "^0.63.0",
     "better-sqlite3": "^13.0.3",
     "hono": "^4.13.2"
