@@ -1077,6 +1077,21 @@ const timelineOp: OperationHandler<
   );
 };
 
+// ── Who am I ─────────────────────────────────────────────────────────────────
+
+/**
+ * The caller's role hint for the SPA shell: `read` is the gate, `manage` is the
+ * probe. No new permission keys — the answer is derived from the same two grants
+ * every other operation checks, so this cannot say anything the kernel wouldn't.
+ */
+const whoamiOp: OperationHandler<void, { role: 'garden-owner' | 'garden-viewer' }> = async (
+  ctx,
+) => {
+  assertAllowed(await ctx.check(GARDEN_PERM.read));
+  const manage = await ctx.check(GARDEN_PERM.manage);
+  return { role: manage.allowed ? 'garden-owner' : 'garden-viewer' };
+};
+
 export const gardenModule: ModuleRegistration = {
   manifest: gardenManifest,
   migrations: gardenMigrations,
@@ -1103,5 +1118,6 @@ export const gardenModule: ModuleRegistration = {
     'garden/remove-plant': removePlantOp as never,
     'garden/export-dxf': exportDxfOp as never,
     'garden/timeline': timelineOp as never,
+    'garden/whoami': whoamiOp as never,
   },
 };

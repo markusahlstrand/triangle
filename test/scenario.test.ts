@@ -174,6 +174,10 @@ describe('triangle scenario', () => {
   });
 
   it('7. the viewer sees everything and changes nothing', async () => {
+    // The SPA's role hint tells each of them apart — derived from the same two
+    // grants every operation checks, so it can't disagree with the kernel.
+    await expect(markus.invoke('garden/whoami')).resolves.toEqual({ role: 'garden-owner' });
+    await expect(vera.invoke('garden/whoami')).resolves.toEqual({ role: 'garden-viewer' });
     // Vera reads the map…
     const site = await vera.invoke<SitePayload>('garden/get-site', { siteId: w.siteId });
     expect(site.site.name).toBe('Casa Markus');
@@ -213,6 +217,7 @@ describe('triangle scenario', () => {
     // With the correct (t1, s1) pair he can mint a stub but holds no tuples
     // there — every operation is denied by the owning scope's evaluation.
     const intruder = await host.getScope(w.nils, w.t1, w.s1);
+    await expect(intruder.invoke('garden/whoami')).rejects.toThrow(/permission denied/);
     await expect(intruder.invoke('garden/list-sites')).rejects.toThrow(/permission denied/);
     await expect(intruder.invoke('garden/get-site', { siteId: w.siteId })).rejects.toThrow(
       /permission denied/,

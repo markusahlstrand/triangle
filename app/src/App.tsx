@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ApiError,
+  LOGIN_URL,
+  LOGOUT_URL,
+  acceptInvite,
   downloadDxf,
-  fetchCast,
+  fetchSession,
   invoke,
   principal,
   setPrincipal,
-  type Cast,
   type MirrorChoice,
+  type Session,
   type SitePayload,
   type SiteSummary,
 } from './api';
@@ -43,15 +47,19 @@ type SheetState =
   | { kind: 'plant' };
 
 export default function App() {
-  const [cast, setCast] = useState<Cast>({});
-  const [castLoaded, setCastLoaded] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
   const [who, setWho] = useState(principal());
   const [sites, setSites] = useState<SiteSummary[] | null>(null);
   const [siteId, setSiteId] = useState<string | null>(null);
   const [site, setSite] = useState<SitePayload | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const readOnly = cast[who]?.role.includes('viewer') ?? false;
+  const cast = session?.kind === 'dev' ? session.cast : {};
+  const signedIn = session?.kind === 'dev' || session?.kind === 'user';
+  const readOnly =
+    session?.kind === 'user'
+      ? session.me.role === 'garden-viewer'
+      : (cast[who]?.role.includes('viewer') ?? false);
 
   const loadSites = useCallback(async () => {
     setError(null);
@@ -73,17 +81,42 @@ export default function App() {
     }
   }, []);
 
+  // Resolve the session once. An `?invite=` token is stashed and stripped from
+  // the URL first (it survives the round-trip to the issuer via localStorage),
+  // then claimed as soon as we are back signed in — a 401 keeps it for after
+  // sign-in; any other failure discards it so a dead token can't loop.
   useEffect(() => {
-    void fetchCast().then((c) => {
-      setCast(c);
-      setCastLoaded(true);
-    });
+    const url = new URL(window.location.href);
+    const invite = url.searchParams.get('invite');
+    if (invite) {
+      localStorage.setItem('triangle-invite', invite);
+      url.searchParams.delete('invite');
+      window.history.replaceState(null, '', url.pathname + (url.search || ''));
+    }
+    void (async () => {
+      let s = await fetchSession();
+      const token = localStorage.getItem('triangle-invite');
+      if (token && s.kind !== 'dev') {
+        try {
+          await acceptInvite(token);
+          localStorage.removeItem('triangle-invite');
+          s = await fetchSession();
+        } catch (e) {
+          if (e instanceof ApiError && e.status !== 401) {
+            localStorage.removeItem('triangle-invite');
+            setError(e.message);
+          }
+        }
+      }
+      setSession(s);
+    })();
   }, []);
   useEffect(() => {
+    if (!signedIn) return;
     setSiteId(null);
     setSite(null);
     void loadSites();
-  }, [who, loadSites]);
+  }, [signedIn, who, loadSites]);
   useEffect(() => {
     if (siteId) void loadSite(siteId);
   }, [siteId, loadSite]);
@@ -108,15 +141,32 @@ export default function App() {
             ))}
           </select>
         )}
+        {session?.kind === 'user' && (
+          <span style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
+            <span className="meta">{session.me.display}</span>
+            <a className="hud-chip" href={LOGOUT_URL}>
+              Sign out
+            </a>
+          </span>
+        )}
       </div>
-      {castLoaded && Object.keys(cast).length === 0 && (
-        <div className="error-bar">
-          No sign-in is wired on this deployment yet — the dev principal picker exists only on the
-          local dev server. Requests will be unauthorized until real auth replaces the dev seam.
+      {error && <div className="error-bar">{error}</div>}
+      {session?.kind === 'anonymous' && (
+        <div className="screen">
+          <div className="h1">Sign in</div>
+          <div className="hint">
+            {session.needsSetup
+              ? 'This garden has just been set up — the first sign-in claims it as its owner.'
+              : localStorage.getItem('triangle-invite')
+                ? 'Sign in with your team account to accept your invite to this garden.'
+                : 'Sign in with your team account to open this garden.'}
+          </div>
+          <a className="btn" href={LOGIN_URL} style={{ textAlign: 'center', textDecoration: 'none' }}>
+            Continue with sign-in
+          </a>
         </div>
       )}
-      {error && <div className="error-bar">{error}</div>}
-      {!siteId && (
+      {signedIn && !siteId && (
         <Home
           sites={sites}
           readOnly={readOnly}
@@ -124,7 +174,7 @@ export default function App() {
           onCreated={loadSites}
         />
       )}
-      {siteId && site && (
+      {signedIn && siteId && site && (
         <SiteView
           site={site}
           readOnly={readOnly}
