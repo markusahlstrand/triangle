@@ -76,7 +76,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.2",
-    "@cloudflare/workers-types": "^5.20260906.1",
+    "@cloudflare/workers-types": "^5.20260905.1",
     "@substrat-run/boundary-lint": "^0.4.1",
     "@substrat-run/model-emit": "^0.8.15",
     "@types/better-sqlite3": "^9.6.0",
@@ -85,5 +85,6 @@
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
     "vitest": "^5.0.0"
-  }
+  },
+  "packageManager": "pnpm@12.3.4"
 }
