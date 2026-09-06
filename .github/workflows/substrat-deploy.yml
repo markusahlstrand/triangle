@@ -94,10 +94,11 @@ jobs:
           # created in the dashboard, where the auth issuer is chosen), the fork has nothing to
           # copy and the control plane answers 409 — fall back to a clean-room preview, which the
           # CLI documents as "a vertical's first environment, before any prod scope exists".
-          if ! npx @substrat-run/cli preview create . --slug triangle --tag pr-${{ github.event.number }} | tee preview.out; then
+          # stderr is merged: the CLI reports the 409 there, and the grep below reads the file.
+          if ! npx @substrat-run/cli preview create . --slug triangle --tag pr-${{ github.event.number }} 2>&1 | tee preview.out; then
             grep -q 'no prod scope to fork' preview.out || exit 1
             echo '::notice::no prod scope to fork yet — creating a clean-room preview instead'
-            npx @substrat-run/cli preview create . --slug triangle --tag pr-${{ github.event.number }} --empty | tee preview.out
+            npx @substrat-run/cli preview create . --slug triangle --tag pr-${{ github.event.number }} --empty 2>&1 | tee preview.out
           fi
           # Take the URL from the CLI success line (the ✓ marker) only — the push it runs
           # first also prints an https:// *deploy endpoint* we must never mistake for a preview.
