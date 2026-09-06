@@ -1,5 +1,36 @@
-// Typed wrappers over the dev API. One generic invoke — the operation registry
-// is the API surface; the kernel checks a permission inside every operation.
+// The auth seam — the only part of this client a person writes.
+//
+// Everything else lives in `api.generated.ts`: the types are the entities'
+// `fields` and the named schemas, the methods are the `http` declarations in
+// `spec/model.ts`, and `pnpm emit` re-emits both. A hand-written client drifts
+// the moment an operation is renamed; a generated one fails `pnpm
+// lint:generated` instead.
+//
+// What is left here is genuinely NOT in the model: which identity a request
+// carries (the dev persona header locally, the session cookie deployed), the
+// session/invite handshake, and turning the DXF text into a download.
+import { ApiError, createClient } from './api.generated';
+import type { SitePayload } from './api.generated';
+
+export { ApiError };
+export type {
+  Measurement,
+  MirrorChoice,
+  Paged,
+  Point,
+  Site,
+  SitePayload,
+  SiteSummary,
+  SolveReport,
+  Species,
+  TriangleClient,
+} from './api.generated';
+
+/** The hydrated shapes `getSite` answers with — the row plus what the map needs. */
+export type Constraint = SitePayload['constraints'][number];
+export type Feature = SitePayload['features'][number];
+export type FeatureVertex = Feature['vertices'][number];
+export type Plant = SitePayload['plants'][number];
 
 export interface CastEntry {
   name: string;
@@ -7,104 +38,6 @@ export interface CastEntry {
 }
 
 export type Cast = Record<string, CastEntry>;
-
-export interface SiteSummary {
-  id: string;
-  name: string;
-  datum_note: string | null;
-  points: number;
-  measurements: number;
-  features: number;
-  plants: number;
-}
-
-export interface Point {
-  id: string;
-  seq: number;
-  name: string;
-  elevation_m: number | null;
-  x: number | null;
-  y: number | null;
-  status: 'named' | 'measured' | 'placed';
-  side: number | null;
-  locked: number;
-  note: string | null;
-}
-
-export interface Measurement {
-  id: string;
-  point_a: string;
-  point_b: string;
-  distance_m: number;
-  note: string | null;
-  created_at: string;
-}
-
-export interface Constraint {
-  id: string;
-  kind: 'right-angle' | 'parallel' | 'equal-length' | 'colinear';
-  points: string[];
-}
-
-export interface FeatureVertex {
-  point_id: string;
-  seq: number;
-  curved_to_next: number;
-}
-
-export interface Feature {
-  id: string;
-  type: string;
-  name: string;
-  closed: number;
-  vertices: FeatureVertex[];
-  props: Record<string, unknown>;
-}
-
-export interface Species {
-  id: string;
-  common_name: string;
-  latin_name: string | null;
-  category: string;
-  mature_canopy_m: number | null;
-  mature_height_m: number | null;
-  years_to_mature: number | null;
-}
-
-export interface Plant {
-  id: string;
-  point_id: string;
-  species_id: string;
-  label: string | null;
-  planted_on: string | null;
-  species: Species;
-}
-
-export interface MirrorChoice {
-  id: string;
-  anchors: [string, string];
-  candidates: [{ x: number; y: number }, { x: number; y: number }];
-}
-
-export interface SolveReport {
-  moved: { pointId: string; from: { x: number; y: number } | null; to: { x: number; y: number }; deltaCm: number }[];
-  placed: string[];
-  unplaced: { id: string; distances: number }[];
-  needsSide: MirrorChoice[];
-  measurementResidualsCm: Record<string, number>;
-  constraintResidualsCm: Record<string, number>;
-  rmsCm: number;
-}
-
-export interface SitePayload {
-  site: { id: string; name: string; datum_note: string | null };
-  points: Point[];
-  measurements: Measurement[];
-  constraints: Constraint[];
-  features: Feature[];
-  plants: Plant[];
-  solve: SolveReport;
-}
 
 let currentPrincipal = localStorage.getItem('triangle-principal') ?? 'markus';
 
@@ -117,30 +50,17 @@ export function setPrincipal(p: string): void {
   localStorage.setItem('triangle-principal', p);
 }
 
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-  ) {
-    super(message);
-  }
-  get denied(): boolean {
-    return this.status === 403;
-  }
-}
-
-export async function invoke<O>(op: string, input?: unknown): Promise<O> {
-  const res = await fetch('/api/invoke', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-principal': currentPrincipal },
-    body: JSON.stringify({ op, input }),
-  });
-  if (!res.ok) {
-    const body = (await res.json().catch(() => ({ error: res.statusText }))) as { error?: string };
-    throw new ApiError(body.error ?? res.statusText, res.status);
-  }
-  return (await res.json()) as O;
-}
+/**
+ * The typed client over the derived route table. The persona header is the
+ * LOCAL dev seam (the worker ignores it unless ALLOW_DEV_HEADER is set); deployed,
+ * the session cookie set by the relying-party flow is what identifies a request.
+ * `errorMessage` is left at its default: the problem+json envelope carries
+ * `detail`, which the default already reads.
+ */
+export const api = createClient({
+  headers: () => ({ 'x-principal': currentPrincipal }),
+  fetch: (input, init) => fetch(input, { credentials: 'same-origin', ...init }),
+});
 
 /**
  * The dev cast — only the LOCAL dev server has one (the x-principal picker is a
@@ -203,26 +123,20 @@ export async function acceptInvite(token: string): Promise<void> {
     body: JSON.stringify({ token }),
   });
   if (!res.ok) {
-    const body = (await res.json().catch(() => ({ error: res.statusText }))) as { error?: string };
-    throw new ApiError(body.error ?? res.statusText, res.status);
+    const body = (await res.json().catch(() => ({}))) as { error?: string; detail?: string };
+    throw new ApiError(res.status, body.detail ?? body.error ?? res.statusText, body);
   }
 }
 
-export function dxfUrl(siteId: string): string {
-  return `/api/sites/${siteId}/export.dxf`;
-}
-
+/**
+ * The DXF is one declared operation like any other — it answers the text and a
+ * filename as JSON — so the download is built here, from the same client.
+ */
 export async function downloadDxf(siteId: string): Promise<void> {
-  const res = await fetch(dxfUrl(siteId), { headers: { 'x-principal': currentPrincipal } });
-  if (!res.ok) {
-    const body = (await res.json().catch(() => ({ error: res.statusText }))) as { error?: string };
-    throw new ApiError(body.error ?? res.statusText, res.status);
-  }
-  const blob = await res.blob();
-  const name = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '')?.[1];
+  const { filename, dxf } = await api.exportDxf({ siteId });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name ?? 'garden.dxf';
+  a.href = URL.createObjectURL(new Blob([dxf], { type: 'application/dxf' }));
+  a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
 }

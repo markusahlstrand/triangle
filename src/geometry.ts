@@ -3,7 +3,7 @@
 // garden module feeds it points + tape distances + constraints and writes the
 // result back; this file never touches a database.
 //
-// Model (DESIGN.md §2):
+// Model (concept §2):
 //   - The FIRST point (creation order) is the origin, fixed at (0,0).
 //   - The SECOND point is the baseline: it sits on the +x axis (y = 0), its x
 //     given by the measured origin→baseline distance.
@@ -17,7 +17,7 @@
 //     coordinates against every distance and constraint. Constraints are
 //     ASSUMPTIONS, so they enter at lower weight than tape measurements —
 //     the solver will never bend real numbers far to satisfy one; the
-//     constraint's own residual grows instead (DESIGN.md §2).
+//     constraint's own residual grows instead (concept §2).
 // ============================================================================
 
 export interface SolvePoint {
@@ -128,7 +128,7 @@ interface DistanceTo {
 
 /**
  * Solve the whole garden. `points` MUST be in creation order — the first two
- * define the coordinate frame (DESIGN.md §2).
+ * define the coordinate frame (concept §2).
  */
 export function solveGarden(
   points: SolvePoint[],

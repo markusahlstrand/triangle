@@ -4,16 +4,24 @@ import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
-import { PermissionDenied, type ScopeStub } from '@substrat-run/kernel';
+import { HTTPException } from 'hono/http-exception';
+import type { ScopeStub } from '@substrat-run/kernel';
 import type { PrincipalId } from '@substrat-run/contracts';
+import { mountApi } from './routes.js';
 import { buildTriangleHost, seedTriangle, type TriangleWorld } from './seed.js';
 
 // ============================================================================
-// A deliberately THIN dev API. Each route authenticates (a dev principal picker
-// via the `x-principal` header — a real deployment swaps in a session), gets the
-// scope, and invokes ONE operation. There is no business logic here: every rule
-// lives in an operation. The kernel checks a permission inside EVERY operation,
-// so the generic /api/invoke route is exactly as safe as one route per op.
+// The DEV entrypoint. It owns exactly three things — a SQLite host on disk, the
+// dev persona picker, and the port — and then mounts `routes.ts`, the same
+// derived route table `worker.ts` mounts. There is no business logic here and
+// no route here either: a route exists because an operation in `spec/model.ts`
+// declares `http`, and for no other reason.
+//
+// AUTH, locally: the `x-principal` header names a member of the seeded cast.
+// Every entry is a real principal with real permission tuples — nothing here
+// is a bypass — but it IS a dev seam: the worker only honours the same header
+// behind ALLOW_DEV_HEADER, never set in prod, and resolves callers through the
+// OIDC relying-party flow instead.
 // ============================================================================
 
 const dataDir = join(dirname(fileURLToPath(import.meta.url)), '..', '.data');
@@ -22,8 +30,7 @@ mkdirSync(dataDir, { recursive: true });
 const host = buildTriangleHost(dataDir);
 const world: TriangleWorld = await seedTriangle(host, dataDir);
 
-// The dev cast, keyed by the `x-principal` header value. Every entry is a real
-// principal with real tuples — nothing here is a bypass. Nils lives in the
+// The dev cast, keyed by the `x-principal` header value. Nils lives in the
 // OTHER tenant: picking him demonstrates the tenant boundary, not a role.
 const CAST: Record<string, { name: string; role: string; principal: PrincipalId; tenant: 't1' | 't2' }> = {
   markus: { name: 'Markus', role: 'garden-owner', principal: world.markus, tenant: 't1' },
@@ -31,20 +38,18 @@ const CAST: Record<string, { name: string; role: string; principal: PrincipalId;
   nils: { name: 'Nils (Vecino — other tenant)', role: 'garden-owner @ Vecino', principal: world.nils, tenant: 't2' },
 };
 
-function entryOf(c: Context) {
-  const who = c.req.header('x-principal') ?? 'markus';
-  const entry = CAST[who];
-  if (!entry) throw new PermissionDenied(`unknown principal: ${who}`);
-  return entry;
-}
-
 /**
  * Resolve the caller to a stub on their OWN tenant's scope — exactly what the
  * platform router would do. `?tenant=t1` lets the dev UI demonstrate Nils
  * attacking Casa Markus and being turned away by the kernel.
  */
 function stub(c: Context): Promise<ScopeStub> {
-  const entry = entryOf(c);
+  // No header is nobody — a 401, the same answer the worker gives — never a
+  // silent default to the owner.
+  const who = c.req.header('x-principal');
+  if (!who) throw new HTTPException(401, { message: 'x-principal header required (markus | vera | nils)' });
+  const entry = CAST[who];
+  if (!entry) throw new HTTPException(401, { message: `unknown principal: ${who}` });
   const target = (c.req.query('tenant') ?? entry.tenant) === 't2' ? 't2' : 't1';
   const node = target === 't2' ? { t: world.t2, s: world.s2 } : { t: world.t1, s: world.s1 };
   return host.getScope(entry.principal, node.t, node.s);
@@ -52,38 +57,19 @@ function stub(c: Context): Promise<ScopeStub> {
 
 const app = new Hono();
 
-app.onError((err, c) => {
-  const message = err instanceof Error ? err.message : String(err);
-  if (err instanceof PermissionDenied || /permission denied/.test(message)) {
-    return c.json({ error: message }, 403);
-  }
-  if (/not found|unknown scope|unknown operation/.test(message)) return c.json({ error: message }, 404);
-  return c.json({ error: message }, 400);
-});
-
+// The dev-only persona picker — host-specific, so it stays out of the shared table.
 app.get('/api/cast', (c) =>
   c.json(
     Object.fromEntries(Object.entries(CAST).map(([k, v]) => [k, { name: v.name, role: v.role }])),
   ),
 );
 
-// One generic invoke — the operation registry is the API surface.
-app.post('/api/invoke', async (c) => {
-  const { op, input } = await c.req.json<{ op: string; input?: unknown }>();
-  return c.json((await (await stub(c)).invoke(op, input)) ?? null);
-});
-
-// DXF as a real download (the one route that isn't JSON).
-app.get('/api/sites/:id/export.dxf', async (c) => {
-  const { filename, dxf } = await (
-    await stub(c)
-  ).invoke<{ filename: string; dxf: string }>('garden/export-dxf', { siteId: c.req.param('id') });
-  c.header('Content-Type', 'application/dxf');
-  c.header('Content-Disposition', `attachment; filename="${filename}"`);
-  return c.body(dxf);
-});
+// Every declared operation, /api/openapi.json, the MCP endpoint at /api/mcp, and
+// the error envelope. The checked-in `openapi.json` exists so a surface change
+// shows up in a PR diff — it is never what is served.
+const mounted = mountApi(app, stub);
 
 const PORT = Number(process.env.PORT ?? 8871);
 serve({ fetch: app.fetch, port: PORT });
-console.log(`Triangle API on http://localhost:${PORT} — data in ${dataDir}`);
+console.log(`Triangle API on http://localhost:${PORT} — ${mounted.length} routes, data in ${dataDir}`);
 console.log(`Pick a principal with the "x-principal" header: ${Object.keys(CAST).join(', ')}`);

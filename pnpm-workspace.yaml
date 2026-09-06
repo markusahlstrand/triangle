@@ -3,6 +3,10 @@ packages:
 onlyBuiltDependencies:
   - better-sqlite3
   - esbuild
+# Supply-chain policy: refuse any release younger than 24 h (what CI's pnpm 12
+# applies by default), except our own packages. Stated here so a local install
+# resolves the same lockfile CI accepts.
+minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   - "@substrat-run/*"
 allowBuilds:

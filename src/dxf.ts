@@ -3,7 +3,7 @@
 // POLYLINE/VERTEX, CIRCLE, POINT and TEXT is the most widely importable flavor
 // there is (AutoCAD, LibreCAD, QCAD, SketchUp Pro, Fusion all read it).
 //
-// Layers (DESIGN.md §7): POINTS, POINT-LABELS, PLANTS, PLANT-LABELS, and one
+// Layers (concept §7): POINTS, POINT-LABELS, PLANTS, PLANT-LABELS, and one
 // FEATURE-<TYPE> per feature type. Point Z carries the elevation, so a
 // 3D-capable tool sees the heights. Curved segments arrive here already
 // sampled into dense polylines — every CAD tool imports those.
@@ -131,7 +131,7 @@ export function buildDxf(input: {
  * Sample a run of points into a dense polyline, honoring per-segment
  * straight/curved flags. Curved segments follow a Catmull-Rom spline through
  * the surrounding points — smooth through every surveyed point, no free
- * control handles to manage in the field (DESIGN.md §2).
+ * control handles to manage in the field (concept §2).
  */
 export function sampleRun(
   vertices: { x: number; y: number; z: number; curvedToNext: boolean }[],

@@ -4,9 +4,9 @@ import {
   LOGIN_URL,
   LOGOUT_URL,
   acceptInvite,
+  api,
   downloadDxf,
   fetchSession,
-  invoke,
   principal,
   setPrincipal,
   type MirrorChoice,
@@ -64,7 +64,7 @@ export default function App() {
   const loadSites = useCallback(async () => {
     setError(null);
     try {
-      setSites(await invoke<SiteSummary[]>('garden/list-sites'));
+      setSites((await api.listSites()).entries);
     } catch (e) {
       setSites([]);
       setError(String((e as Error).message));
@@ -73,7 +73,7 @@ export default function App() {
 
   const loadSite = useCallback(async (id: string) => {
     try {
-      setSite(await invoke<SitePayload>('garden/get-site', { siteId: id }));
+      setSite(await api.getSite({ siteId: id }));
     } catch (e) {
       setError(String((e as Error).message));
       setSite(null);
@@ -251,7 +251,7 @@ function Home(props: {
             disabled={!name.trim() || action.busy}
             onClick={() =>
               void action.run(async () => {
-                await invoke('garden/create-site', {
+                await api.createSite({
                   name: name.trim(),
                   ...(datum.trim() ? { datumNote: datum.trim() } : {}),
                 });
@@ -289,7 +289,7 @@ function SiteView(props: {
   const pendingMirror = site.solve.needsSide[0] ?? null;
 
   const pickSide = (choice: MirrorChoice, side: 1 | -1) =>
-    void action.run(() => invoke('garden/choose-side', { pointId: choice.id, side }));
+    void action.run(() => api.chooseSide({ pointId: choice.id, side }));
 
   const close = () => setSheet({ kind: 'none' });
 
@@ -410,7 +410,7 @@ function SiteView(props: {
                     {!readOnly && (
                       <button
                         style={{ marginLeft: 10, color: 'var(--bad)' }}
-                        onClick={() => void action.run(() => invoke('garden/remove-plant', { plantId: pl.id }))}
+                        onClick={() => void action.run(() => api.removePlant({ plantId: pl.id }))}
                       >
                         ✕
                       </button>
@@ -438,7 +438,7 @@ function SiteView(props: {
                       {!readOnly && (
                         <button
                           style={{ marginLeft: 10, color: 'var(--bad)' }}
-                          onClick={() => void action.run(() => invoke('garden/delete-constraint', { constraintId: c.id }))}
+                          onClick={() => void action.run(() => api.deleteConstraint({ constraintId: c.id }))}
                         >
                           ✕
                         </button>
@@ -576,7 +576,7 @@ function MeasureTab(props: {
               {!props.readOnly && (
                 <button
                   style={{ marginLeft: 10, color: 'var(--bad)' }}
-                  onClick={() => void action.run(() => invoke('garden/delete-measurement', { measurementId: m.id }))}
+                  onClick={() => void action.run(() => api.deleteMeasurement({ measurementId: m.id }))}
                 >
                   ✕
                 </button>

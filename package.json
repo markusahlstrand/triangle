@@ -7,6 +7,7 @@
     "permissions": "src/provision.ts",
     "runtimeNeeds": {
       "entry": "src/worker.ts",
+      "needsNodeCompat": true,
       "stores": [
         {
           "binding": "SCOPE",
@@ -32,7 +33,24 @@
       }
     },
     "tenant": "t-5ra4yxscep",
-    "slug": "triangle"
+    "slug": "triangle",
+    "client": {
+      "model": "spec/model.ts",
+      "entities": "gardenEntities",
+      "operations": "gardenOperations",
+      "schemas": {
+        "SolveReport": "solveReport",
+        "SitePayload": "sitePayload",
+        "MirrorChoice": "mirrorChoice",
+        "SiteSummary": "siteSummary"
+      },
+      "out": "app/src/api.generated.ts",
+      "name": "Triangle",
+      "types": {
+        "mirrorChoice.anchors": "[string, string]",
+        "mirrorChoice.candidates": "[{ x: number; y: number }, { x: number; y: number }]"
+      }
+    }
   },
   "scripts": {
     "dev": "concurrently -k \"tsx watch src/server.ts\" \"npm --prefix app run dev\"",
@@ -40,30 +58,34 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.worker.json --noEmit",
     "lint:boundaries": "substrat-boundary-lint",
+    "lint:generated": "tsx tools/emit.mts --check",
+    "emit": "tsx tools/emit.mts",
     "app:build": "npm --prefix app run build",
     "changeset": "changeset",
-    "release": "pnpm test && pnpm typecheck && pnpm lint:boundaries && changeset version && substrat push --promote prod"
+    "release": "pnpm test && pnpm typecheck && pnpm lint:boundaries && pnpm lint:generated && changeset version && substrat push --promote prod"
   },
   "dependencies": {
-    "@hono/node-server": "^2.1.0",
-    "@substrat-run/adapter-cloudflare": "^0.63.0",
-    "@substrat-run/adapter-sqlite": "^0.63.0",
-    "@substrat-run/contracts": "^0.64.0",
-    "@substrat-run/kernel": "^0.63.0",
-    "@substrat-run/vertical-auth": "^0.7.0",
-    "@substrat-run/vertical-host": "^0.63.0",
+    "@hono/node-server": "^2.1.1",
+    "@substrat-run/adapter-cloudflare": "^0.98.1",
+    "@substrat-run/adapter-sqlite": "^0.98.1",
+    "@substrat-run/contracts": "^0.98.1",
+    "@substrat-run/kernel": "^0.98.1",
+    "@substrat-run/vertical-auth": "^0.12.1",
+    "@substrat-run/vertical-host": "^0.98.1",
     "better-sqlite3": "^13.0.3",
-    "hono": "^4.13.2"
+    "hono": "^4.13.7"
   },
   "devDependencies": {
-    "@changesets/cli": "^3.0.0",
-    "@cloudflare/workers-types": "^5.20260813.1",
-    "@substrat-run/boundary-lint": "^0.0.7",
+    "@changesets/cli": "^3.0.2",
+    "@cloudflare/workers-types": "^5.20260905.1",
+    "@substrat-run/boundary-lint": "^0.4.1",
+    "@substrat-run/model-emit": "^0.8.15",
     "@types/better-sqlite3": "^9.6.0",
-    "@types/node": "^26.2.0",
-    "concurrently": "^10.0.4",
-    "tsx": "^4.23.12",
+    "@types/node": "^26.4.1",
+    "concurrently": "^10.0.5",
+    "tsx": "^4.23.13",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.10"
-  }
+    "vitest": "^5.0.0"
+  },
+  "packageManager": "pnpm@12.3.4"
 }

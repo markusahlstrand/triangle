@@ -9,7 +9,7 @@ import {
 } from '../src/geometry.js';
 
 // ============================================================================
-// The solver, exercised on the DESIGN.md §8 numbers: house-SW is the origin,
+// The solver, exercised on the spec/concept.md §9 numbers: house-SW is the origin,
 // house-SE the 12.40 m baseline, pool-NW fixed by 7.10 m and 9.80 m — two
 // mirror candidates until a side is chosen, a third distance auto-resolving,
 // and the least-squares adjustment absorbing (and reporting) tape disagreement.

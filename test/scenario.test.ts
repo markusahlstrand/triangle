@@ -9,7 +9,7 @@ import { buildTriangleHost, seedTriangle, type TriangleWorld } from '../src/seed
 import type { SitePayload, SolveReport } from '../src/module.js';
 
 // ============================================================================
-// The Triangle scenario (DESIGN.md §8), replayed headlessly against a temp
+// The Triangle scenario (spec/concept.md §9), replayed headlessly against a temp
 // dir: the seeded survey solves to the real rectangle, a new point walks the
 // mirror-choice flow, a lying tape pull surfaces as a residual, the DXF
 // export carries every promised label — then every door that should be shut
@@ -156,7 +156,7 @@ describe('triangle scenario', () => {
       { siteId: w.siteId },
     );
     expect(filename).toBe('casa-markus.dxf');
-    // Layers per DESIGN.md §7.
+    // Layers per concept §7.
     for (const layer of ['POINTS', 'POINT-LABELS', 'FEATURE-HOUSE', 'FEATURE-RETENTION-WALL', 'PLANTS', 'PLANT-LABELS']) {
       expect(dxf).toContain(layer);
     }
@@ -182,7 +182,7 @@ describe('triangle scenario', () => {
     const site = await vera.invoke<SitePayload>('garden/get-site', { siteId: w.siteId });
     expect(site.site.name).toBe('Casa Markus');
     expect(site.plants[0]!.species.common_name).toBe('Olivo');
-    // …and may export (DESIGN.md §4: viewers export DXF)…
+    // …and may export (concept §4: viewers export DXF)…
     await expect(
       vera.invoke('garden/export-dxf', { siteId: w.siteId }),
     ).resolves.toHaveProperty('dxf');
@@ -211,7 +211,8 @@ describe('triangle scenario', () => {
     await expect(host.getScope(w.nils, w.t2, w.s1)).rejects.toThrow(/unknown scope/);
     // …the control: his own (t2, s2) pair resolves, and his own garden lists.
     const home = await host.getScope(w.nils, w.t2, w.s2);
-    const own = await home.invoke<{ name: string }[]>('garden/list-sites');
+    // A paged read: in-process callers get the `Page` envelope the wire projects into headers.
+    const own = (await home.invoke<{ entries: { name: string }[] }>('garden/list-sites')).entries;
     expect(own.map((s) => s.name)).toEqual(['Vecino back plot']);
 
     // With the correct (t1, s1) pair he can mint a stub but holds no tuples
@@ -246,19 +247,22 @@ describe('triangle scenario', () => {
   });
 
   it('10. the audit spine answers "why did the pool move"', async () => {
-    const siteTimeline = await markus.invoke<{ type: string }[]>('garden/timeline', {
-      entityType: 'site',
-      entityId: w.siteId,
-    });
-    const types = siteTimeline.map((e) => e.type);
+    const siteTimeline = await markus.invoke<{ entries: { type: string; payload: unknown }[] }>(
+      'garden/timeline',
+      { entityType: 'site', entityId: w.siteId, limit: 100 },
+    );
+    const types = siteTimeline.entries.map((e) => e.type);
     expect(types).toContain('garden.site-created');
     expect(types).toContain('garden.solved'); // every survey change that moved a point
+    // The history carries the fat payload — what moved, and by how much.
+    const solved = siteTimeline.entries.find((e) => e.type === 'garden.solved')!;
+    expect(solved.payload).toHaveProperty('moved');
 
-    const pointTimeline = await markus.invoke<{ type: string }[]>('garden/timeline', {
+    const pointTimeline = await markus.invoke<{ entries: { type: string }[] }>('garden/timeline', {
       entityType: 'point',
       entityId: w.points.poolNW!,
     });
-    expect(pointTimeline.map((e) => e.type)).toContain('garden.point-created');
+    expect(pointTimeline.entries.map((e) => e.type)).toContain('garden.point-created');
 
     // The viewer can read the audit trail too — read, not manage.
     await expect(

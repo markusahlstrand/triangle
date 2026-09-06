@@ -3,11 +3,24 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2022"],
-    "types": ["@cloudflare/workers-types"],
+    "lib": [
+      "ES2022"
+    ],
+    "types": [
+      "@cloudflare/workers-types"
+    ],
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src/worker.ts", "src/provision.ts", "src/manifest.ts", "src/migrations.ts", "src/module.ts"]
+  "include": [
+    "src/worker.ts",
+    "src/routes.ts",
+    "src/api.ts",
+    "src/provision.ts",
+    "src/manifest.ts",
+    "src/migrations.ts",
+    "src/module.ts",
+    "spec/model.ts"
+  ]
 }
