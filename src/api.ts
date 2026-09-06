@@ -3,7 +3,7 @@
  *
  * `apiCatalogFrom` reads the summaries and the input/output schemas off the
  * declared operations, so the document and the handlers cannot disagree: they
- * are the same objects. Served live at `/openapi.json` by both hosts, and
+ * are the same objects. Served live at `/api/openapi.json` by both hosts, and
  * written to the checked-in `openapi.json` by `pnpm emit` so a surface change
  * shows up in a pull request diff (`pnpm lint:generated` fails on drift).
  */

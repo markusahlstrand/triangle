@@ -290,7 +290,7 @@ via `runSolve` and return what moved; nothing moves silently.
 23 operations. From it: `src/manifest.ts` (permissions, events, entity relations,
 paged lists), `operationInputs` (the host parses every invocation), `operationConcurrency`
 (`If-Match` on `update-point` / `update-feature`), the route table on both hosts,
-the MCP endpoint at `/api/mcp` (`whoami` opts out), `openapi.json` and
+the MCP endpoint at `/api/mcp` (`whoami` opts out), `/api/openapi.json` and
 `app/src/api.generated.ts` (`pnpm emit`). Paged reads (`list-sites`, `list-species`,
 `timeline`) return a `Page` in process and a bare array + `Link` header on the wire.
 Errors are RFC 9457 problem documents: `permission_denied` → 403, `validation_failed`

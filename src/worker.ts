@@ -42,7 +42,6 @@ import {
 } from '@substrat-run/adapter-cloudflare';
 import { readRoutedNode, RouterAssertionError, ulid, type ScopeStub } from '@substrat-run/kernel';
 import { mountPlatformSurface } from '@substrat-run/vertical-host';
-import { API_DOCUMENT } from './api.js';
 import { mountApi } from './routes.js';
 import {
   IdentityDO,
@@ -252,15 +251,12 @@ async function requireOwner(c: Context<{ Bindings: Env }>): Promise<ScopeStub> {
 const app = new Hono<{ Bindings: Env }>();
 
 // ── The vertical's API — the SAME derived table `server.ts` mounts (src/routes.ts) ──
-// Every operation `spec/model.ts` declares `http` for, the MCP endpoint at
-// /api/mcp, and the problem+json error envelope. Mounted BEFORE the platform
+// Every operation `spec/model.ts` declares `http` for, /api/openapi.json, the
+// MCP endpoint at /api/mcp, and the problem+json error envelope. Mounted BEFORE the platform
 // surface below: Hono keeps only the last-registered `onError`, so the platform's
 // envelope wins for the whole app — harmless, because both are built on the same
 // `classifyError` (a denial is 403 on both).
 mountApi(app, stub);
-
-// The document those routes are derived from, served from this origin.
-app.get('/openapi.json', (c) => c.json(API_DOCUMENT));
 
 // The relying-party flow — `/login` → issuer → `/callback` → session cookie →
 // `/logout`. Credentials/sessions live entirely at the OIDC issuer; the
@@ -391,7 +387,7 @@ app.all('/api/*', (c) => c.json({ error: `unknown route: ${new URL(c.req.raw.url
 app.all('*', (c) =>
   c.json({
     service: 'triangle',
-    api: 'derived from spec/model.ts — see /openapi.json; MCP at /api/mcp',
+    api: 'derived from spec/model.ts — see /api/openapi.json; MCP at /api/mcp',
     docs: 'https://substrat.net',
   }),
 );

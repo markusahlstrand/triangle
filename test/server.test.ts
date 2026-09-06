@@ -158,6 +158,14 @@ describe('the derived route table, served', () => {
     expect((await req(`/api/sites/${w.siteId}`, 'nils')).status).toBe(404);
   });
 
+  it('serves the document the table is derived from, under the same prefix', async () => {
+    const res = await req('/api/openapi.json');
+    expect(res.status).toBe(200);
+    const doc = (await res.json()) as { info: { title: string }; paths: Record<string, unknown> };
+    expect(doc.info.title).toBe('Triangle');
+    expect(Object.keys(doc.paths)).toContain('/api/sites/{siteId}');
+  });
+
   it('the role hint answers per caller', async () => {
     expect(await (await req('/api/whoami', 'markus')).json()).toEqual({ role: 'garden-owner' });
     expect(await (await req('/api/whoami', 'vera')).json()).toEqual({ role: 'garden-viewer' });

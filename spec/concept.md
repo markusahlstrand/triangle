@@ -194,7 +194,7 @@ closed format, no writer outside SketchUp's SDK; DXF is the interchange path.
 Every operation below is declared once in `spec/model.ts`. `mountOperations` derives
 the route table at mount time on **both** hosts (`src/routes.ts`), the same
 declarations answer as MCP tools at `/api/mcp`, `src/api.ts` renders the OpenAPI
-document (served at `/openapi.json`, checked in as `openapi.json`), and `pnpm emit`
+document (served at `/api/openapi.json`, checked in as `openapi.json`), and `pnpm emit`
 renders the SPA client (`app/src/api.generated.ts`). `pnpm lint:generated` fails on
 drift. Paths are under `/api`.
 

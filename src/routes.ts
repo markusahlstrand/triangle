@@ -14,6 +14,7 @@
 import type { Context, Hono } from 'hono';
 import { mountOperations, problemResponse, type ResolveStub } from '@substrat-run/vertical-host';
 import { gardenOperations } from '../spec/model.js';
+import { API_DOCUMENT } from './api.js';
 import { gardenModule } from './module.js';
 
 export type { ResolveStub };
@@ -42,6 +43,10 @@ export interface MountedRoute {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mountApi(app: Hono<any, any, any>, resolveStub: ResolveStub): MountedRoute[] {
   app.onError((err, c: Context) => problemResponse(c, err));
+  // The document the routes below are derived from, on the SAME prefix: deployed,
+  // only `/api/*` reaches the worker — everything else is the SPA's asset store
+  // with single-page fallback, so `/openapi.json` would answer index.html.
+  app.get('/api/openapi.json', (c) => c.json(API_DOCUMENT));
   return mountOperations(app, gardenOperations, resolveStub, {
     basePath: '/api',
     // A typo between a declaration and the registered handler fails at mount,

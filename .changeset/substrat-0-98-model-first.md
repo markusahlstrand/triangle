@@ -17,7 +17,7 @@ Move to Substrat 0.98 and make the model the source of every surface.
   on both hosts. The hand-written `/api/invoke` and the DXF file route are gone; the
   DXF download is built in the browser from the `export-dxf` JSON. Every operation
   with `http` is also an MCP tool at `/api/mcp` (`whoami` opts out) and an entry in
-  the OpenAPI document served at `/openapi.json` and checked in as `openapi.json`.
+  the OpenAPI document served at `/api/openapi.json` and checked in as `openapi.json`.
 - **Paged reads** — `list-sites`, `list-species` (kernel-composed) and `timeline`
   (via `readHistory`, with the fat payload) return a `Page` in process and a bare
   array + `Link` header on the wire. In-process callers read `.entries`.

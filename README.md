@@ -8,7 +8,7 @@ DXF. Owners survey; invited viewers see everything and change nothing.
 The concept as built is [`spec/concept.md`](spec/concept.md). The model it describes —
 eight entities, 23 operations — is [`spec/model.ts`](spec/model.ts), and everything
 else is derived from it: the manifest, the host-side input parsing, the route table on
-both hosts, the MCP endpoint at `/api/mcp`, `openapi.json` and the SPA client. The
+both hosts, the MCP endpoint at `/api/mcp`, `/api/openapi.json` and the SPA client. The
 always-on rules an agent must not violate live in [`AGENTS.md`](AGENTS.md).
 
 ## Run it

@@ -7,7 +7,6 @@ import type { Context } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import type { ScopeStub } from '@substrat-run/kernel';
 import type { PrincipalId } from '@substrat-run/contracts';
-import { API_DOCUMENT } from './api.js';
 import { mountApi } from './routes.js';
 import { buildTriangleHost, seedTriangle, type TriangleWorld } from './seed.js';
 
@@ -65,12 +64,9 @@ app.get('/api/cast', (c) =>
   ),
 );
 
-// The document the operations describe, computed once at boot from the same
-// declarations the routes below are derived from. The checked-in `openapi.json`
-// exists so a surface change shows up in a PR diff — never to be served.
-app.get('/openapi.json', (c) => c.json(API_DOCUMENT));
-
-// Every declared operation, the MCP endpoint at /api/mcp, and the error envelope.
+// Every declared operation, /api/openapi.json, the MCP endpoint at /api/mcp, and
+// the error envelope. The checked-in `openapi.json` exists so a surface change
+// shows up in a PR diff — it is never what is served.
 const mounted = mountApi(app, stub);
 
 const PORT = Number(process.env.PORT ?? 8871);
