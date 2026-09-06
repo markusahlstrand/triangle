@@ -14,14 +14,14 @@ import { GARDEN_PERM } from './manifest.js';
 // permission registry from it (package.json `substrat.permissions`).
 // ============================================================================
 
-/** Triangle composes NO engines (DESIGN.md §3) — one module, the garden. */
+/** Triangle composes NO engines (concept §3) — one module, the garden. */
 export const MODULES = [gardenModule];
 
 /** Entitlements are default-deny: one SKU key per module this vertical runs. */
 export const ENTITLEMENT_KEYS = ['garden'];
 
 /**
- * The whole cast is two roles (DESIGN.md §4/§6): the owner surveys and plans;
+ * The whole cast is two roles (concept §4/§6): the owner surveys and plans;
  * the viewer looks and exports. Nobody sees another tenant's garden — that is
  * the kernel's tenancy, not a role.
  */
@@ -35,7 +35,7 @@ export const OWNER_ROLE_KEY = 'garden-owner';
 
 /**
  * Entity-narrowed grant SHAPE, reserved for the invite-a-viewer future
- * (DESIGN.md §3): a viewer invited to ONE garden would hold `garden:read`
+ * (concept §3): a viewer invited to ONE garden would hold `garden:read`
  * narrowed to that site instead of the tenant-wide viewer role. Declared now
  * so the reviewable surface already names it; today's seed uses the role.
  */

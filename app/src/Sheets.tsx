@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  invoke,
+  api,
   ApiError,
   type Constraint,
   type Feature,
@@ -46,7 +46,7 @@ export function useAction(onDone: () => Promise<void> | void) {
       await onDone();
       return true;
     } catch (e) {
-      setError(e instanceof ApiError && e.denied ? `Not allowed: ${e.message}` : String((e as Error).message ?? e));
+      setError(e instanceof ApiError && e.status === 403 ? `Not allowed: ${e.message}` : String((e as Error).message ?? e));
       return false;
     } finally {
       setBusy(false);
@@ -120,7 +120,7 @@ export function AddMeasurementSheet(props: {
   const save = async (next: boolean) => {
     if (!a || !b || !cm) return;
     const ok = await action.run(async () => {
-      const r = await invoke<{ solve: SolveReport }>('garden/add-measurement', {
+      const r = await api.addMeasurement({
         siteId: props.site.site.id,
         pointA: a,
         pointB: b,
@@ -244,7 +244,7 @@ export function AddPointSheet(props: {
         disabled={!name.trim() || action.busy}
         onClick={() =>
           void action.run(async () => {
-            await invoke('garden/create-point', {
+            await api.createPoint({
               siteId: props.site.site.id,
               name: name.trim(),
               ...(elev.trim() !== '' && !Number.isNaN(Number(elev)) ? { elevationM: Number(elev) } : {}),
@@ -304,7 +304,7 @@ export function PointDetailSheet(props: {
                 {!props.readOnly && (
                   <button
                     style={{ marginLeft: 10, color: 'var(--bad)' }}
-                    onClick={() => void action.run(() => invoke('garden/delete-measurement', { measurementId: m.id }))}
+                    onClick={() => void action.run(() => api.deleteMeasurement({ measurementId: m.id }))}
                   >
                     ✕
                   </button>
@@ -330,7 +330,7 @@ export function PointDetailSheet(props: {
                 disabled={action.busy || (elev.trim() !== '' && Number.isNaN(Number(elev)))}
                 onClick={() =>
                   void action.run(() =>
-                    invoke('garden/update-point', {
+                    api.updatePoint({
                       pointId: p.id,
                       elevationM: elev.trim() === '' ? null : Number(elev),
                     }),
@@ -344,7 +344,7 @@ export function PointDetailSheet(props: {
           <button
             className="btn secondary"
             disabled={action.busy}
-            onClick={() => void action.run(() => invoke('garden/update-point', { pointId: p.id, locked: p.locked !== 1 }))}
+            onClick={() => void action.run(() => api.updatePoint({ pointId: p.id, locked: p.locked !== 1 }))}
           >
             {p.locked === 1 ? 'Unlock position' : 'Lock position'}
           </button>
@@ -353,7 +353,7 @@ export function PointDetailSheet(props: {
             disabled={action.busy}
             onClick={() =>
               void action.run(async () => {
-                await invoke('garden/delete-point', { pointId: p.id });
+                await api.deletePoint({ pointId: p.id });
                 props.onClose();
               })
             }
@@ -389,7 +389,7 @@ export function ConstraintSheet(props: {
 
   const doPreview = () =>
     void action.run(async () => {
-      const r = await invoke<SolveReport>('garden/preview-constraint', {
+      const r = await api.previewConstraint({
         siteId: props.site.site.id,
         kind: kind!.kind,
         pointIds: picked,
@@ -456,7 +456,7 @@ export function ConstraintSheet(props: {
               disabled={action.busy}
               onClick={() =>
                 void action.run(async () => {
-                  await invoke('garden/add-constraint', {
+                  await api.addConstraint({
                     siteId: props.site.site.id,
                     kind: kind.kind,
                     pointIds: picked,
@@ -495,7 +495,7 @@ export function FeatureSheet(props: {
   onSaved: () => Promise<void>;
 }) {
   const f = props.existing;
-  const [type, setType] = useState<string>(f?.type ?? 'retention-wall');
+  const [type, setType] = useState<Feature['type']>(f?.type ?? 'retention-wall');
   const [name, setName] = useState(f?.name ?? '');
   const [closed, setClosed] = useState(f ? f.closed === 1 : false);
   const [vertices, setVertices] = useState<{ pointId: string; curvedToNext: boolean }[]>(
@@ -511,7 +511,7 @@ export function FeatureSheet(props: {
         <>
           <div className="field">
             <div className="section-label">Type</div>
-            <select value={type} onChange={(e) => setType(e.target.value)} disabled={f !== null}>
+            <select value={type} onChange={(e) => setType(e.target.value as Feature['type'])} disabled={f !== null}>
               {FEATURE_TYPES.map((t) => (
                 <option key={t} value={t}>
                   {t}
@@ -573,9 +573,9 @@ export function FeatureSheet(props: {
             onClick={() =>
               void action.run(async () => {
                 if (f) {
-                  await invoke('garden/update-feature', { featureId: f.id, name: name.trim(), closed, vertices });
+                  await api.updateFeature({ featureId: f.id, name: name.trim(), closed, vertices });
                 } else {
-                  await invoke('garden/create-feature', {
+                  await api.createFeature({
                     siteId: props.site.site.id,
                     type,
                     name: name.trim(),
@@ -595,7 +595,7 @@ export function FeatureSheet(props: {
               disabled={action.busy}
               onClick={() =>
                 void action.run(async () => {
-                  await invoke('garden/delete-feature', { featureId: f.id });
+                  await api.deleteFeature({ featureId: f.id });
                   props.onClose();
                 })
               }
@@ -623,7 +623,7 @@ export function PlantSheet(props: {
   const action = useAction(props.onSaved);
 
   if (species === null) {
-    void invoke<Species[]>('garden/list-species').then(setSpecies);
+    void api.listSpecies().then((page) => setSpecies(page.entries));
   }
 
   return (
@@ -661,9 +661,9 @@ export function PlantSheet(props: {
             disabled={!pointId || action.busy}
             onClick={() =>
               void action.run(async () => {
-                await invoke('garden/add-plant', {
+                await api.addPlant({
                   siteId: props.site.site.id,
-                  pointId,
+                  pointId: pointId!,
                   speciesId: picked.id,
                   ...(label.trim() ? { label: label.trim() } : {}),
                 });

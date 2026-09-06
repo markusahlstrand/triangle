@@ -42,6 +42,8 @@ import {
 } from '@substrat-run/adapter-cloudflare';
 import { readRoutedNode, RouterAssertionError, ulid, type ScopeStub } from '@substrat-run/kernel';
 import { mountPlatformSurface } from '@substrat-run/vertical-host';
+import { API_DOCUMENT } from './api.js';
+import { mountApi } from './routes.js';
 import {
   IdentityDO,
   oidcAuthProvider,
@@ -249,14 +251,16 @@ async function requireOwner(c: Context<{ Bindings: Env }>): Promise<ScopeStub> {
 
 const app = new Hono<{ Bindings: Env }>();
 
-// The same error envelope as the dev server, so the SPA reads denials as 403s.
-app.onError((err, c) => {
-  if (err instanceof HTTPException) return err.getResponse();
-  const message = err instanceof Error ? err.message : String(err);
-  if (/permission denied/.test(message)) return c.json({ error: message }, 403);
-  if (/not found|unknown scope|unknown operation/.test(message)) return c.json({ error: message }, 404);
-  return c.json({ error: message }, 400);
-});
+// ── The vertical's API — the SAME derived table `server.ts` mounts (src/routes.ts) ──
+// Every operation `spec/model.ts` declares `http` for, the MCP endpoint at
+// /api/mcp, and the problem+json error envelope. Mounted BEFORE the platform
+// surface below: Hono keeps only the last-registered `onError`, so the platform's
+// envelope wins for the whole app — harmless, because both are built on the same
+// `classifyError` (a denial is 403 on both).
+mountApi(app, stub);
+
+// The document those routes are derived from, served from this origin.
+app.get('/openapi.json', (c) => c.json(API_DOCUMENT));
 
 // The relying-party flow — `/login` → issuer → `/callback` → session cookie →
 // `/logout`. Credentials/sessions live entirely at the OIDC issuer; the
@@ -284,19 +288,12 @@ app.get('/api/me', async (c) => {
   return c.json({ key: principal, display: subject?.name ?? subject?.email ?? 'You', role: who.role });
 });
 
-// Generic invoke: the kernel checks a permission inside EVERY operation, so a
-// generic route is exactly as safe as one route per operation.
-app.post('/api/invoke', async (c) => {
-  const { op, input } = await c.req.json<{ op: string; input?: unknown }>();
-  return c.json((await (await stub(c)).invoke(op, input)) ?? null);
-});
-
 // The dev principal picker exists only on the local dev server (src/server.ts) —
 // deployed, the cast is empty and the SPA keys its signed-in state off /api/me.
 app.get('/api/cast', (c) => c.json({}));
 
 /**
- * Invites — the join path for the viewer (DESIGN.md §3's invite-a-viewer, on the
+ * Invites — the join path for the viewer (concept §3's invite-a-viewer, on the
  * identity directory): creating one pre-mints a principal, grants it the chosen
  * role at scope level, and records the invite keyed by the token's hash; the
  * plaintext token rides only in the returned accept link. The invitee
@@ -352,16 +349,6 @@ app.post('/api/accept-invite', async (c) => {
   return c.json({ ok: true, principal });
 });
 
-// DXF as a real download (the one route that isn't JSON).
-app.get('/api/sites/:id/export.dxf', async (c) => {
-  const { filename, dxf } = await (
-    await stub(c)
-  ).invoke<{ filename: string; dxf: string }>('garden/export-dxf', { siteId: c.req.param('id') });
-  c.header('Content-Type', 'application/dxf');
-  c.header('Content-Disposition', `attachment; filename="${filename}"`);
-  return c.body(dxf);
-});
-
 // ── /internal/* — the platform-gated management contract ────────────────────
 // The control plane provisions, heals, inspects and restores installs through
 // these routes. The whole contract — provision, reconcile, introspection, the
@@ -403,8 +390,8 @@ mountPlatformSurface<Env>(app, {
 app.all('/api/*', (c) => c.json({ error: `unknown route: ${new URL(c.req.raw.url).pathname}` }, 404));
 app.all('*', (c) =>
   c.json({
-    service: 'substrat vertical',
-    api: 'POST /api/invoke { op, input }',
+    service: 'triangle',
+    api: 'derived from spec/model.ts — see /openapi.json; MCP at /api/mcp',
     docs: 'https://substrat.net',
   }),
 );

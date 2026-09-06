@@ -19,7 +19,7 @@ import { ENTITLEMENT_KEYS, MODULES, OWNER_ROLE_KEY, ROLES } from './provision.js
 export { ENTITY_GRANTS, MODULES, permissions, ROLES } from './provision.js';
 
 // ============================================================================
-// The seeded world (DESIGN.md §6). TWO tenants on purpose: Casa Markus is the
+// The seeded world (concept §6). TWO tenants on purpose: Casa Markus is the
 // garden under test; Vecino — the neighbour's garden, its own owner — exists
 // to be attacked, which is how isolation gets proven rather than claimed.
 // ============================================================================
@@ -72,7 +72,7 @@ async function provisionGarden(
   });
 }
 
-/** The starter species library (DESIGN.md §7) — Mediterranean garden basics. */
+/** The starter species library (concept §7) — Mediterranean garden basics. */
 const STARTER_SPECIES = [
   { commonName: 'Olivo', latinName: 'Olea europaea', category: 'tree', matureCanopyM: 6, matureHeightM: 8, yearsToMature: 25 },
   { commonName: 'Limonero', latinName: 'Citrus limon', category: 'tree', matureCanopyM: 4, matureHeightM: 5, yearsToMature: 10 },

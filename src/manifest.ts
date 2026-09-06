@@ -1,70 +1,50 @@
-import { moduleManifest, permissionKey } from '@substrat-run/contracts';
+/**
+ * The garden module's MANIFEST — assembled from `spec/model.ts`, not written twice.
+ *
+ * `manifestOperations` reads the permission keys and emitted events off the
+ * operations; `manifestEntities` reads the parent edges (the link edges the
+ * adapter enforces) off the entities; `listsDeclaredBy` reads every kernel-
+ * composed paged read so the kernel provisions the index behind it. What is
+ * left here is what is genuinely a fact about this DEPLOYMENT rather than the
+ * app — its id, its version, where its journal lives, its entitlement — plus
+ * the one thing prose has to supply: what each permission key means.
+ *
+ * Triangle composes NO engines (concept §3): every table is the vertical's own.
+ */
+import {
+  listsDeclaredBy,
+  manifestEntities,
+  manifestOperations,
+  moduleManifest,
+  permissionKey,
+} from '@substrat-run/contracts';
+import { gardenEntities, gardenOperations } from '../spec/model.js';
 
-// ============================================================================
-// The garden module's MANIFEST — the reviewable contract the kernel reads at
-// registration. Triangle composes NO engines (DESIGN.md §3): the survey, the
-// solver, the features, the plants and the DXF export are all vertical domain.
-// What the kernel contributes is tenancy (a garden owner is a tenant), the
-// owner/viewer permission split, and the audit spine ("why did the pool move
-// 12 cm last Tuesday" has an answer).
-// ============================================================================
-
-/** The vertical's permission keys — deliberately just two (DESIGN.md §4). */
+/** The vertical's permission keys — deliberately just two (concept §4). */
 export const GARDEN_PERM = {
   /** Everything that changes a garden: points, tape pulls, constraints, features, plants, species. */
   manage: permissionKey.parse('garden:manage'),
-  /** See the map and everything on it, and export DXF. What a viewer gets. */
+  /** See the map and everything on it, read the audit trail, and export DXF. What a viewer gets. */
   read: permissionKey.parse('garden:read'),
-};
+} as const;
 
 export const gardenManifest = moduleManifest.parse({
   id: 'garden',
   version: '0.0.1',
   kernelContract: '^0.0.1',
-  permissions: [
-    {
-      key: 'garden:manage',
-      description:
-        'Survey and plan a garden: add/edit points, tape measurements, constraints, features, plants and the species library',
-    },
-    {
-      key: 'garden:read',
-      description: 'View gardens — the map, points, features, plants — and export DXF',
-    },
-  ],
-  // Fat events for every mutation (rule 6): a consumer — today the audit
-  // timeline, someday a vivero-quote emitter — never needs a cross-module read.
-  events: {
-    emits: [
-      { type: 'garden.site-created', schemaVersion: 1 },
-      { type: 'garden.point-created', schemaVersion: 1 },
-      { type: 'garden.point-updated', schemaVersion: 1 },
-      { type: 'garden.point-deleted', schemaVersion: 1 },
-      { type: 'garden.measurement-added', schemaVersion: 1 },
-      { type: 'garden.measurement-deleted', schemaVersion: 1 },
-      { type: 'garden.constraint-added', schemaVersion: 1 },
-      { type: 'garden.constraint-deleted', schemaVersion: 1 },
-      { type: 'garden.solved', schemaVersion: 1 },
-      { type: 'garden.feature-created', schemaVersion: 1 },
-      { type: 'garden.feature-updated', schemaVersion: 1 },
-      { type: 'garden.feature-deleted', schemaVersion: 1 },
-      { type: 'garden.plant-added', schemaVersion: 1 },
-      { type: 'garden.plant-removed', schemaVersion: 1 },
-      { type: 'garden.dxf-exported', schemaVersion: 1 },
-    ],
-    consumes: [],
-  },
   migrations: { journalDir: './migrations', compatibleFrom: '0.0.1' },
-  attachmentTargets: [],
-  // Everything in a garden hangs off its site. Declared now so a future
-  // per-garden viewer invite (engine-invites) can narrow `garden:read` to one
-  // site and the walk point→site / feature→site / plant→site resolves it.
-  entityRelations: [
-    { entityType: 'point', parentType: 'site' },
-    { entityType: 'measurement', parentType: 'site' },
-    { entityType: 'constraint', parentType: 'site' },
-    { entityType: 'feature', parentType: 'site' },
-    { entityType: 'plant', parentType: 'site' },
-  ],
+  ...manifestOperations(gardenOperations, {
+    permissions: {
+      'garden:manage':
+        'Survey and plan a garden: add/edit points, tape measurements, constraints, features, plants and the species library',
+      'garden:read': 'View gardens — the map, points, features, plants, the audit trail — and export DXF',
+    },
+  }),
+  // Every `parents` edge on the model becomes an `entityRelations` entry — the
+  // allowlist `ctx.link` checks, and what a future per-garden viewer grant
+  // (`garden:read` narrowed to one site) would walk.
+  ...manifestEntities(gardenEntities, {}),
+  // The kernel-composed paged reads (`paged.over`) and the indexes behind them.
+  lists: listsDeclaredBy(gardenOperations, gardenEntities),
   entitlementKey: 'garden',
 });

@@ -1,7 +1,7 @@
 import type { SqlMigration } from '@substrat-run/kernel';
 
 // ============================================================================
-// The garden module's OWN tables (DESIGN.md §7), prefixed `garden_` so they can
+// The garden module's OWN tables (concept §7), prefixed `garden_` so they can
 // never collide with anything. Ids are TEXT (ULIDs), timestamps ISO-8601 TEXT,
 // all lengths/coordinates REAL meters. Migrations are append-only and ordered:
 // once a version has shipped, you add a new one, you never edit it.
@@ -19,7 +19,7 @@ export const gardenMigrations: SqlMigration[] = [
       );
 
       -- Survey points. seq is the creation order the solver's frame depends on:
-      -- the lowest-seq point is the origin, the second the baseline (DESIGN §2).
+      -- the lowest-seq point is the origin, the second the baseline (concept §2).
       -- x/y are SOLVER OUTPUT (meters), never hand-edited; status mirrors the
       -- lifecycle named/measured/placed. side records the mirror choice as the
       -- sign of the cross product against the point's first two anchors.
@@ -51,7 +51,7 @@ export const gardenMigrations: SqlMigration[] = [
       );
       CREATE INDEX garden_measurements_site ON garden_measurements(site_id);
 
-      -- Solver assumptions (DESIGN §2/§7): right-angle | parallel |
+      -- Solver assumptions (concept §2/§7): right-angle | parallel |
       -- equal-length | colinear. points_json is the ordered id list whose
       -- meaning depends on kind ([at, from, to] for right-angle; [a1,a2,b1,b2]
       -- for parallel/equal-length; [p1..pn] for colinear).
@@ -79,7 +79,7 @@ export const gardenMigrations: SqlMigration[] = [
       CREATE INDEX garden_features_site ON garden_features(site_id);
 
       -- The ordered point-run that gives a feature its shape; curved_to_next
-      -- marks a smooth segment (DESIGN §2). Features never store coordinates.
+      -- marks a smooth segment (concept §2). Features never store coordinates.
       CREATE TABLE garden_feature_vertices (
         feature_id     TEXT NOT NULL REFERENCES garden_features(id),
         seq            INTEGER NOT NULL,

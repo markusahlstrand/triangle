@@ -1,3 +1,4 @@
+<!-- Adapted by hand from the substrat skill (.claude/skills/substrat/SKILL.md in substrat-run/substrat) — NOT emitted from it. The two diverge on purpose; tools/playbook-sync.mts fails CI when the skill moves so a human ports what belongs here. Edit this file directly. -->
 # Playbook — build a vertical on Substrat
 
 The always-on rules live in [`AGENTS.md`](../AGENTS.md); read them first. This playbook is
@@ -7,8 +8,8 @@ reshape the reference into it. Read the whole thing before starting — both the
 (Step 4) and the checkpoints (Step 7) are hard stops.
 
 **The target is a reviewed design, not running code.** Steps 1–2 learn the domain and map it
-onto what already exists; Step 3 writes a checked-in `DESIGN.md` in the user's own vocabulary;
-Step 4 is a **hard stop** where the user reads and approves it. Only then does Step 5 reshape
+onto what already exists; Step 3 writes a checked-in `spec/concept.md` in the user's own
+vocabulary; Step 4 is a **hard stop** where the user reads and approves it. Only then does Step 5 reshape
 the reference into their domain. The design gate (Step 4) is *upstream* of the two code
 checkpoints (Step 7) — a user with zero Substrat knowledge gets to say "yes, that's the app I
 want" before implementation, not after.
@@ -71,7 +72,13 @@ Every vertical gets this whether or not it uses a single engine:
 - **Tenancy** — tenants and scopes, isolated at the database level. A scope is one
   SQLite/DO database. Cross-tenant access is not a bug you avoid; there is no API for it.
 - **Permissions** — roles, grants, entity-narrowed grants, and every decision carries a
-  proof path (why it was allowed).
+  proof path (why it was allowed). **Sharing is a kernel verb, not a table you design**:
+  an operation narrows a permission it already holds onto one entity, and withdraws it,
+  with `ctx.grant(principal, perm, entityRef)` / `ctx.revoke(principal, perm, entityRef)`
+  — entity-required, delegating (re-checks the caller's own decision), transactional with
+  the operation. Neither alternative is this: a `ctx.link` edge is permanent (not
+  revocable at all), and org membership is revocable but coarse-grained. Never mint an
+  org per domain row to get a revoke.
 - **Events + audit** — every mutation emits a kernel-stamped event. Origin fields (tenant,
   scope, actor, time) are stamped by the kernel; your code cannot mislabel one.
 - **Migrations** — journaled per module, applied lazily per scope.
@@ -97,6 +104,15 @@ Imported directly; their in-scope functions run in **your** transaction. Read ea
 - **`engine-invites`** — how a person joins an org they are not in. Identifiers stored
   hashed and never returned; an invitation confers nothing until accepted. Reach for it
   before hand-rolling any invite flow.
+- **`engine-absence`** — leave and absence: leave types, requests that are decided rather
+  than simply written, and the balance they draw down (`requestAbsence`, `decideAbsence`,
+  `balanceAsOf`, `availability`). Which days count and which year a balance belongs to is
+  calendar policy, and calendar policy is yours.
+- **`engine-metering`** — metered usage: meters, usage recorded against them, and periods
+  closed over them (`configureMeter`, `recordUsage`, `closePeriod`, `usageTotal`). By call
+  rather than by event on purpose — you record usage inside the same transaction as the
+  work that produced it, so the ledger row and the work commit or roll back together.
+  Reach for it before adding a `usage` table and a monthly `SUM` of your own.
 
 ### Tier 2 — engines you feed by event
 
@@ -147,8 +163,9 @@ stop. Do not scaffold.
 ## Step 3 — Write the design document
 
 **This is the deliverable.** Everything before now was learning; this is where it lands
-somewhere the user can hold. Write a **checked-in `DESIGN.md`** in the project root, in the
-user's own vocabulary — no Substrat internals, no decision refs, no cross-references to
+somewhere the user can hold. Write a **checked-in `spec/concept.md`** — beside
+`spec/model.ts`, which is this same design one rung more concrete — in the user's own
+vocabulary — no Substrat internals, no decision refs, no cross-references to
 platform docs. Someone who has never heard of Substrat must be able to read it and recognise
 their own business.
 
@@ -190,10 +207,23 @@ plain language, so nothing there is a surprise:
    cross-tenant attacker gets nothing).
 9. **Open decisions** — each with a **recommended default**, so the user chooses rather
    than specifies:
-   - **Auth.** Local dev uses an `x-principal` header — a dev seam, not a login. Default to
-     it and note it must be replaced before anything real; offer to wire a real login (the
-     bike-shop reference shows the Better Auth pattern) now if they want it. Real auth gates
-     *exposing* the app, not *building* it.
+   - **Auth.** Local dev signs in at `@substrat-run/dev-issuer`, a real OIDC provider you
+     authenticate with by picking a name — so the local login is already the production
+     flow, and there is no dev-only auth path to unpick later. Real auth still gates
+     *exposing* the app, not *building* it, and the hosted worker resolves nobody until you
+     wire its seam; if the app will be deployed for real users, do that from the start: the standard is a **separate OIDC issuer**
+     (an Auth Server app in the same team, or an external issuer — Supabase/Auth0/AuthHero/
+     Keycloak), never per-app credential storage. The vertical is a pure OIDC **relying
+     party**: depend on `@substrat-run/vertical-auth`, bind its `IdentityDO` (the
+     `sub → principal` directory, TOFU owner claim, invites) as a third DO store, read the
+     platform-delivered `substrat:auth` config per scope (`authWiring`), and build
+     `oidcRpAuthProvider` per request — see https://substrat.net/concepts/identity. The
+     dashboard's New-app **Identity** section does the automatic half (dynamic client
+     registration at the issuer + `/internal/configure` delivery) — but ONLY at app
+     creation, and only for verticals that implement this seam. An install created without
+     the identity choice stays `builtin`/unwired forever (switching issuers is deliberately
+     create-time only); a starter worker whose `authenticatedPrincipal` returns null answers
+     401 to everything deployed, however many auth servers exist in the team.
    - **Deploy or stay local.** Local-first is a legitimate endpoint; default to it.
 10. **Out of scope / deferred** — what you are deliberately not building, so the review is
     about a bounded thing.
@@ -222,12 +252,81 @@ Approval of the design is what unlocks Step 5. Until you have it, you are still 
 
 ---
 
-## Step 5 — Reshape the reference
+## Step 5 — Declare the model
+
+The design is approved. Before reshaping any code, declare **what exists** in
+`spec/model.ts`: entities, the operations over them, and the permissions those operations
+check. One TypeScript module, and the compiler checks the joins between them.
+
+```ts
+import { defineEntities, defineOperations, emitModel } from '@substrat-run/contracts';
+import { z } from '@substrat-run/contracts';
+
+export const entities = defineEntities({
+  customer: {
+    table: 'acme_customers',
+    fields: z.object({ id: z.string(), number: z.string(), name: z.string() }),
+    key: ['number'],
+    erasable: ['name'],
+  },
+  site: { table: 'acme_sites', fields: z.object({ id: z.string(), customer_id: z.string() }), parents: ['customer'] },
+});
+
+export const PERMISSIONS = ['customer:manage'] as const;
+
+export const operations = defineOperations(entities, PERMISSIONS)({
+  'acme/create-customer': {
+    summary: 'Register a customer',
+    permission: 'customer:manage',
+    input: z.object({ number: z.string(), name: z.string() }),
+    output: entities.customer.fields,
+    emits: { entity: 'customer', entityIdFrom: 'id', type: 'acme.customer-created', schemaVersion: 1, piiClass: 'none' },
+  },
+});
+
+export const model = emitModel(entities);
+```
+
+These are compile errors, not lints: a `parents` naming no entity, a `permission` that is
+not declared, an `entityIdFrom` naming no field of that operation's `output`, a `payload`
+carrying a field the entity marks `erasable`, a `{var}` in an HTTP path that names no input
+field. All before a handler exists.
+
+Field names mirror the SQL columns, snake_case included — a prettier naming here is a second
+description of the same rows. Not every table is an entity: an entity is something the
+platform can point at (attachments hang off one, grants narrow to one, events are about one).
+
+`primaryKey` defaults to `['id']` — declare it where the identity is something else. The side
+table you add for extra data on an engine's entity is keyed by *that engine's id*
+(`primaryKey: ['workorder_id']`); its identity IS the work order's, and an `id` of its own
+would permit two side rows for one work order. A value-keyed table is keyed by its values
+(`primaryKey: ['customer_id', 'year', 'month']`). It is separate from `key`, which is an
+additional uniqueness rule — a table legitimately has both. An entity with neither an `id`
+field nor a `primaryKey` is refused rather than emitted without one.
+
+A **composite** key means the entity cannot be pointed at: attachments, grants, link edges
+and event subjects all need one id, so naming such an entity in `parents`,
+`attachmentTargets`, `relations`, `emits.entity` or a narrowed `permission.entity` is a
+compile error. It is still a full model member with migrations and a row type. A
+single-column key that is not called `id` stays fully pointable.
+
+Behaviour stays prose in `spec/concept.md`. Inventing a way to declare a state *transition*
+means the boundary slipped.
+
+Full reference: https://substrat.net/concepts/model
+
+**Do not edit `spec/model.ts` while reshaping the code.** If a handler cannot return what the
+model declares, that is real information — say so and stop, rather than reshaping the model
+to make the build pass.
+
+---
+
+## Step 6 — Reshape the reference
 
 The design is approved. The scaffold already contains a working vertical in `src/` + `test/` —
 the bike-repair shop. **Read it first** (it's your Callout: the real, green implementation of
 every pattern this step describes), then reshape it into the user's domain from the approved
-`DESIGN.md`:
+`spec/concept.md`:
 
 - **Rename the vocabulary** — `shop_customers`/`shop_bikes` → the user's nouns, the `shop/*`
   operation names, the roles, the price-list shape. If the user's core noun maps onto a work
@@ -273,13 +372,61 @@ operations + the `ModuleRegistration`. Keep the split — the linter and tests e
   the customer.
 - Migrations: `SqlMigration[]`, tables prefixed `<vertical>_`, TEXT ids, ISO-8601 TEXT
   timestamps, money/decimals as TEXT. **Append-only forever after first ship.**
-- Operations: first line is always `assertAllowed(await ctx.check(PERM))`. Parse inputs
-  with Zod. `ctx.link(child, parent)` when creating related entities.
+- Operations: first line is always `assertAllowed(await ctx.check(PERM))`.
+  `ctx.link(child, parent)` when creating related entities.
+- **Handlers do not hand-parse their input.** The module passes
+  `operationInputs: operationInputsOf(<vertical>Operations)` beside its `operations`, and
+  the host parses every invocation against the declared schema before the guards and the
+  handler run — on every path in (HTTP, test, seed, schedule). The reference module already
+  does this; keep it. An inline `z.object(…).parse(input)` at the top of a handler is a
+  second description of a schema the model already declares, and it only covers the paths
+  that happen to reach that handler.
+- **Time comes from `ctx.now()`.** Module code has no other clock; `new Date()` and
+  `Date.now()` are banned exactly like `node:*`. It is the same instant for the whole
+  invocation, so your rows and the events announcing them agree about when.
 - **The pricing moment is the pattern to copy**: read the engine's reported lines with
   `getReportedLines(ctx, orderId)` → apply the vertical's price list → call the engine's
   `completeWorkOrder`. One transaction, invariants intact.
+- **Swallowing an engine error requires `ctx.atomic`.** An engine call composed inside your
+  transaction has no boundary of its own, so a `catch` that handles the failure and carries
+  on leaves you holding its partial writes — the rows its invariants were protecting — and
+  then commits them. Wrap it instead:
+
+  ```ts
+  try {
+    await ctx.atomic(() => completeWorkOrder(ctx, { orderId, billable }));
+  } catch {
+    // the engine's rows, events, links and grants are all gone; your own writes
+    // survive, and the operation still commits once
+  }
+  ```
+
+  A succeeded `ctx.atomic` is still provisional: if the operation later throws, its writes
+  go too. Sub-transactions nest but must not interleave — starting two concurrently throws.
+  The line is whether the failure still reaches the caller. A catch that **swallows** an
+  engine error — one that does not rethrow — is what needs the boundary, and outside
+  `ctx.atomic` `boundary-lint` rejects it with no escape hatch. A catch that always
+  rethrows (`catch (e) { log(e); throw e }`) needs nothing, and neither does
+  `try`/`finally` with no `catch`: the operation still fails and the whole transaction
+  rolls back, which is already the outcome the rule protects. Reach for `ctx.atomic` when
+  you intend to *continue* past the failure.
 - Portal listing: iterate and `ctx.check(perm, entityRef)` **per entity** — a proof walk,
   not UI filtering.
+- **An entity's history is `readTimeline(ctx, entity, input)` from `@substrat-run/kernel`** —
+  not a `SELECT` against `_substrat_outbox`. Reading the spine is allowed (writes to
+  `_substrat_*` are not); hand-writing the query is what goes wrong. It returns
+  `{ entries, nextCursor }` with `{ id, type, occurredAt, actor }` per entry, and it exists
+  to close two traps: `actor` is stored as JSON over a union — a principal is `"01J…"`
+  *with quotes*, so a raw `SELECT actor` is a string that resolves against no one — and
+  the cursor must be the event `id`, never `occurred_at`, which is identical across every
+  event a single operation emits. Your permission check stays your line, above the call.
+  `readHistory` is the same walk plus the payload, the permissions that authorized the
+  write — each with the grant it resolved through, `null` for a row written before that
+  was recorded, which is not the same fact as `[]` — and the PII classification,
+  `piiClass` with the `subjectId` it is keyed by, so a renderer can decide whether an
+  entry is safe to show before it shows it. `subjectId` is null when `piiClass` is
+  `none`, and the payload is `null` after that subject's erasure, which is a supported
+  answer to render rather than an error.
 
 ### `src/seed.ts`
 
@@ -294,7 +441,10 @@ await host.provisionScope(actor, { tenantId: tenant, scopeId: scope, jurisdictio
 
 Define roles **per tenant** from the engines' `PERM` + your keys, assign them, create seed
 entities via `stub.invoke` (**never raw SQL**), give portal principals entity-narrowed
-grants. Make it idempotent.
+grants. Make it idempotent. Seed-time grants are the platform actor's verb; sharing a
+**user** initiates at runtime is `ctx.grant` / `ctx.revoke` inside an operation (see the
+`AGENTS.md` section on sharing, and the [todo demo](https://github.com/substrat-run/substrat/tree/main/demos/todo)'s
+`src/module.ts` for the two calls in place).
 
 ### `test/scenario.test.ts`
 
@@ -314,7 +464,7 @@ closed-door assertion with a control proving a neighbouring door is still open.
 
 ---
 
-## Step 6 — Run it
+## Step 7 — Run it
 
 Build confidence in this order, and **show the user the output of each**:
 
@@ -326,17 +476,58 @@ pnpm dev                         # API on :8871 (PORT=… WEB_PORT=… to move i
 ```
 
 Then **actually exercise it** — don't just report that the server started. A green scenario
-test never touches `server.ts`, its routes, or the principal picker, so it can be green
-while the app is broken. Drive the real flow with curl (create → assign → start → report →
-complete) as two personas, switching `x-principal` to show a denial landing as a denial.
-The moment the attack fails is the demo; make sure the user sees it.
+test never touches `server.ts`, its routes, or the login, so it can be green while the app
+is broken. Drive the real flow with curl (create → assign → start → report → complete) as
+two personas, so a denial lands as a denial. Get a session without a browser by minting a
+token at the issuer — `curl -XPOST localhost:8879/dev/token -d '{"sub":"dev|greta"}'` — and
+sending it as `Authorization: Bearer …`. The moment the attack fails is the demo; make sure
+the user sees it.
 
-If they want a UI, scaffold a minimal Vite + React app under `app/` with a principal picker
-and typed wrappers over the routes. Ask first — it roughly doubles the work.
+If they want a UI, scaffold a minimal Vite + React app under `app/` with typed wrappers over
+the routes and a sign-in button that redirects to `/api/auth/login`. Ask first — it roughly
+doubles the work.
+
+**The same change that creates `app/` declares it** — before a single component is written.
+A UI ships as NATIVE assets: `substrat push` runs the declared build, hashes the output and
+uploads it to the runtime's own asset store, served from the edge without invoking the
+worker. Undeclared, the directory is never built, never uploaded, and the deployed vertical
+answers `/api/*` and 404s on `/` — a deploy that looks entirely successful, and a failure no
+gate before deploy can see (`pnpm test` never touches `server.ts`, boundary-lint has no
+opinion about static files, and a vertical with no UI must legitimately declare no assets).
+
+```jsonc
+"substrat": {
+  "runtimeNeeds": {
+    "entry": "src/worker.ts",
+    "build": "npm --prefix app install && npm --prefix app run build",
+    "assets": {
+      "directory": "app/dist",
+      "notFoundHandling": "single-page-application",   // deep client routes → index.html
+      "runWorkerFirst": ["/api/*", "/internal/*"]      // only these reach the worker
+    }
+  }
+}
+```
+
+`build` runs before assets are collected, so the directory may be pure build output. Never
+base64-inline a built `app/dist` into a generated worker module: it costs ~+33 % script size
+and a worker invocation per image.
+
+Two more that each fail silently:
+
+- **`runWorkerFirst` must list every worker-owned prefix.** With
+  `notFoundHandling: "single-page-application"`, a missing `/api/*` entry answers every API
+  call with `index.html` — the app then reports parse errors instead of denials.
+- **The app calls its own origin** (`fetch('/api' + path)`), never a baked base URL. The Vite
+  `proxy` block is a dev-only convenience; `VITE_API_URL` or `localhost:8871` works on the
+  author's machine and reaches nothing from a phone.
+
+`substrat push` refuses an `app/` that nothing would serve, so this cannot reach a hostname
+undeclared — but the refusal is a backstop, not the instruction. Declare it here.
 
 ---
 
-## Step 7 — The two checkpoints. STOP HERE.
+## Step 8 — The two checkpoints. STOP HERE.
 
 **You may never self-approve these. Present them and wait.** The design gate (Step 4) already
 took the user's approval of *what* to build; these confirm that the code matches it.
@@ -357,7 +548,7 @@ and who can see other tenants' data?* A permission diff nobody understands is th
 
 ---
 
-## Step 8 — Deploy (optional)
+## Step 9 — Deploy (optional)
 
 Only if the user asks. Local-first is a legitimate stopping point.
 
@@ -369,52 +560,73 @@ routes), and package.json already carries the `substrat.runtimeNeeds` block the 
 derives the deploy config from (stores, node-compat, build) — you never author wrangler
 config. When you reshape the vertical, keep `src/provision.ts` the single source of
 MODULES/ROLES: both the dev server and the worker register from it, so a module added
-only in seed.ts would run locally and silently not deploy.
-
-**The SPA ships as NATIVE assets (#340)**: declare `runtimeNeeds.assets` (`directory`
-pointing at the built app, `notFoundHandling: "single-page-application"`,
-`runWorkerFirst: ["/api/*", "/internal/*"]`) plus a `build` command that produces the
-directory — `substrat push` builds, hashes and uploads it, and the platform serves it
-from the edge without invoking the worker. Never inline the SPA into the worker bundle;
-that pattern predates the native asset path.
-
-The deploy path is the authenticated CLI, and the author never holds a Cloudflare token:
+only in seed.ts would run locally and silently not deploy. The deploy path is the
+authenticated CLI, and the author never holds a Cloudflare token:
 
 - `substrat login` / `substrat whoami` — authenticate against the control plane.
-- `substrat push` — push the vertical. The version comes from `package.json`; a **private**
-  (tenant-owned) vertical is admitted automatically; a **listed/shared** one waits for
-  staff admission.
-
-**Versioning is owned by changesets, not by hand-edits or push's auto-bump.** During
-work, record intent with `pnpm changeset` (patch/minor/major + a summary). Releasing is
-one command:
-
-```sh
-pnpm release   # gates (test, typecheck, boundary-lint) → changeset version → substrat push --promote prod
-```
-
-`changeset version` consumes the pending changesets, bumps `package.json`, and writes
-`CHANGELOG.md`; the push then deploys **that exact version** and points prod at it.
-Never run a bare `substrat push` to release — its auto-bump would advance the registry
-past `package.json` and the two drift apart. Setup (already done in this scaffold):
-`@changesets/cli` in devDependencies, `.changeset/config.json` with
-`"privatePackages": { "version": true, "tag": false }`, and pnpm-workspace.yaml listing
-`packages: ["."]` so changesets can see the root package.
+- `substrat push` — push the vertical. By default the version is the registry's highest
+  semver, patch-bumped; `package.json`'s version is only a **seed for the first push of a
+  new slug**, and an explicit `--version` always wins. A **private** (tenant-owned)
+  vertical is admitted automatically; a **listed/shared** one waits for staff admission.
 - `substrat promote <slug> --channel dev|staging|prod --version … [--ack-permissions]
   [--ack-migrations]` — the owner promotes every channel, prod included, for their own
   private vertical.
 - `substrat hostnames bind <slug> --surface <s> [--domain <d>]` — mint a live hostname, or
   record a custom domain pending DNS validation (`substrat hostnames verify`).
 
+**If this vertical has a UI, its `runtimeNeeds.assets` block was written back in Step 7**,
+when `app/` was created — that is the one description of it, and it is not repeated here so
+the two cannot drift. If you are deploying a vertical scaffolded before that rule existed,
+go read it now: an undeclared `app/` deploys clean and 404s at its own hostname. `substrat
+push` refuses that push, with the recipe.
+
+**A deploy is not done until the URL serves the app.** Two requests, and show the user both:
+
+```sh
+curl -si https://<hostname>/        | head -3   # expect 200 + content-type: text/html
+curl -si https://<hostname>/api/me  | head -3   # expect the worker, not index.html
+```
+
+Triage a 404 in one request instead of an hour — the two layers fail differently:
+
+| What you see | Where it broke |
+|---|---|
+| `404` with a Cloudflare body, `/internal/*` answers `403` | the worker ran; assets are undeclared or unbuilt |
+| `404` before any worker header | the hostname is not bound to this surface |
+| `/api/*` returns HTML | `runWorkerFirst` is missing that prefix |
+
+**Let changesets own the version, and pass it to push explicitly** — the default bump walks
+the registry forward on its own, so `package.json` and the registry drift apart within a
+few deploys. Set this up when the vertical first deploys:
+
+```sh
+pnpm add -D @changesets/cli && npx changeset init
+```
+
+Then in `.changeset/config.json` add `"privatePackages": { "version": true, "tag": false }`
+(the vertical is a private package, never npm-published), make sure `pnpm-workspace.yaml`
+lists `packages: ["."]` so changesets can see the root package, and add the scripts:
+
+```json
+"changeset": "changeset",
+"release": "pnpm test && pnpm typecheck && pnpm lint:boundaries && changeset version && substrat push --version $(node -p \"require('./package.json').version\") --promote prod"
+```
+
+Read the version with `node -p` at that point in the script, not `$npm_package_version` —
+the latter is captured before `changeset version` rewrites `package.json`, so it would push
+the version you just replaced. Changesets needs a git repo with a commit on the base branch
+(`git init -b main`) — a scaffold that isn't a repo yet must init before the first release.
+
 Updates deploy **in place** from one stable script — data carries forward, migrations run
 against prod data, backout is a time-boxed PITR rewind.
 
-Before deploying: the `x-principal` dev header **must** be gone. Shipping it is a
-cross-tenant hole with a UI.
+Before deploying: `worker.ts`'s auth seam **must** be wired — it resolves nobody as it
+ships, so every `/api/*` call is 401 until you do. Never substitute a header that names the
+caller: that is a cross-tenant hole with a UI, which is why the starter no longer has one.
 
 ---
 
-## Step 9 — Leave the project competent
+## Step 10 — Leave the project competent
 
 The next session — in any tool — starts cold. The scaffold already ships `AGENTS.md`,
 `CLAUDE.md`, and the Cursor/opencode command stubs, so the rules and this flow survive. Your

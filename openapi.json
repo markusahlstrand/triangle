@@ -1,0 +1,5431 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Triangle",
+    "version": "0.0.1",
+    "description": "Garden survey & planning with a 20 m tape — on Substrat."
+  },
+  "paths": {
+    "/api/sites/{siteId}/constraints": {
+      "post": {
+        "operationId": "garden-add-constraint",
+        "summary": "Apply a constraint (right angle, parallel, equal length, colinear)",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "description": "Assumptions enter the adjustment at half the weight of tape measurements.",
+        "tags": [
+          "Constraints"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "siteId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "right-angle",
+                      "parallel",
+                      "equal-length",
+                      "colinear"
+                    ]
+                  },
+                  "pointIds": {
+                    "minItems": 3,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "required": [
+                  "siteId",
+                  "kind",
+                  "pointIds"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "constraintId": {
+                      "type": "string"
+                    },
+                    "constraint": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "site_id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "right-angle",
+                            "parallel",
+                            "equal-length",
+                            "colinear"
+                          ]
+                        },
+                        "points_json": {
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "site_id",
+                        "kind",
+                        "points_json",
+                        "created_at"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "solve": {
+                      "type": "object",
+                      "properties": {
+                        "siteId": {
+                          "type": "string"
+                        },
+                        "moved": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "pointId": {
+                                "type": "string"
+                              },
+                              "from": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "deltaCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "pointId",
+                              "from",
+                              "to",
+                              "deltaCm"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "placed": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "unplaced": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "distances": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "distances"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "needsSide": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "anchors": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              "candidates": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "anchors",
+                              "candidates"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "measurementResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "constraintResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "rmsCm": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "siteId",
+                        "moved",
+                        "placed",
+                        "unplaced",
+                        "needsSide",
+                        "measurementResidualsCm",
+                        "constraintResidualsCm",
+                        "rmsCm"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "constraintId",
+                    "constraint",
+                    "solve"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/sites/{siteId}/measurements": {
+      "post": {
+        "operationId": "garden-add-measurement",
+        "summary": "Record a tape pull between two points, in centimeters",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "description": "Entered in centimeters as the tape reads; stored in meters.",
+        "tags": [
+          "Survey"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "siteId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "pointA": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "pointB": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "distanceCm": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "siteId",
+                  "pointA",
+                  "pointB",
+                  "distanceCm"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "measurementId": {
+                      "type": "string"
+                    },
+                    "measurement": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "site_id": {
+                          "type": "string"
+                        },
+                        "point_a": {
+                          "type": "string"
+                        },
+                        "point_b": {
+                          "type": "string"
+                        },
+                        "distance_m": {
+                          "type": "number"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "site_id",
+                        "point_a",
+                        "point_b",
+                        "distance_m",
+                        "note",
+                        "created_at"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "solve": {
+                      "type": "object",
+                      "properties": {
+                        "siteId": {
+                          "type": "string"
+                        },
+                        "moved": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "pointId": {
+                                "type": "string"
+                              },
+                              "from": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "deltaCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "pointId",
+                              "from",
+                              "to",
+                              "deltaCm"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "placed": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "unplaced": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "distances": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "distances"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "needsSide": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "anchors": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              "candidates": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "anchors",
+                              "candidates"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "measurementResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "constraintResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "rmsCm": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "siteId",
+                        "moved",
+                        "placed",
+                        "unplaced",
+                        "needsSide",
+                        "measurementResidualsCm",
+                        "constraintResidualsCm",
+                        "rmsCm"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "measurementId",
+                    "measurement",
+                    "solve"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/sites/{siteId}/plants": {
+      "post": {
+        "operationId": "garden-add-plant",
+        "summary": "Plant a species at a point",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "tags": [
+          "Plants"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "siteId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "pointId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "speciesId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "plantedOn": {
+                    "type": "string"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "siteId",
+                  "pointId",
+                  "speciesId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "site_id": {
+                      "type": "string"
+                    },
+                    "point_id": {
+                      "type": "string"
+                    },
+                    "species_id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "planted_on": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "note": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "created_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "site_id",
+                    "point_id",
+                    "species_id",
+                    "label",
+                    "planted_on",
+                    "note",
+                    "created_at"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/points/{pointId}/side": {
+      "post": {
+        "operationId": "garden-choose-side",
+        "summary": "Pick which of the two mirror positions a two-distance point is on",
+        "parameters": [
+          {
+            "name": "pointId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "description": "A point with exactly two distances has two mirror candidates.",
+        "tags": [
+          "Survey"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pointId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "side": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "const": 1
+                      },
+                      {
+                        "type": "number",
+                        "const": -1
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "pointId",
+                  "side"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pointId": {
+                      "type": "string"
+                    },
+                    "point": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "site_id": {
+                          "type": "string"
+                        },
+                        "seq": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "elevation_m": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "x": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "y": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "named",
+                            "measured",
+                            "placed"
+                          ]
+                        },
+                        "side": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "locked": {
+                          "type": "number"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "site_id",
+                        "seq",
+                        "name",
+                        "elevation_m",
+                        "x",
+                        "y",
+                        "status",
+                        "side",
+                        "locked",
+                        "note",
+                        "created_at"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "solve": {
+                      "type": "object",
+                      "properties": {
+                        "siteId": {
+                          "type": "string"
+                        },
+                        "moved": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "pointId": {
+                                "type": "string"
+                              },
+                              "from": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "deltaCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "pointId",
+                              "from",
+                              "to",
+                              "deltaCm"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "placed": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "unplaced": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "distances": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "distances"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "needsSide": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "anchors": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              "candidates": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "anchors",
+                              "candidates"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "measurementResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "constraintResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "rmsCm": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "siteId",
+                        "moved",
+                        "placed",
+                        "unplaced",
+                        "needsSide",
+                        "measurementResidualsCm",
+                        "constraintResidualsCm",
+                        "rmsCm"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "pointId",
+                    "point",
+                    "solve"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/sites/{siteId}/features": {
+      "post": {
+        "operationId": "garden-create-feature",
+        "summary": "Draw a feature through an ordered run of points",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "description": "Features are ordered point-runs; they never store coordinates.",
+        "tags": [
+          "Features"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "siteId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "retention-wall",
+                      "pool",
+                      "terrace",
+                      "stairs",
+                      "house",
+                      "fence",
+                      "bed",
+                      "path"
+                    ]
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "closed": {
+                    "type": "boolean"
+                  },
+                  "vertices": {
+                    "minItems": 2,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "pointId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "curvedToNext": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "pointId"
+                      ]
+                    }
+                  },
+                  "props": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  }
+                },
+                "required": [
+                  "siteId",
+                  "type",
+                  "name",
+                  "vertices"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "site_id": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "retention-wall",
+                        "pool",
+                        "terrace",
+                        "stairs",
+                        "house",
+                        "fence",
+                        "bed",
+                        "path"
+                      ]
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "closed": {
+                      "type": "number"
+                    },
+                    "props_json": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "site_id",
+                    "type",
+                    "name",
+                    "closed",
+                    "props_json",
+                    "created_at"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/sites/{siteId}/points": {
+      "post": {
+        "operationId": "garden-create-point",
+        "summary": "Name a survey point (the first becomes the origin, the second the baseline)",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "description": "The first point is the origin, the second the baseline on +x.",
+        "tags": [
+          "Survey"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "siteId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "elevationM": {
+                    "type": "number"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "siteId",
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "site_id": {
+                      "type": "string"
+                    },
+                    "seq": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "elevation_m": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "x": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "y": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "named",
+                        "measured",
+                        "placed"
+                      ]
+                    },
+                    "side": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "locked": {
+                      "type": "number"
+                    },
+                    "note": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "created_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "site_id",
+                    "seq",
+                    "name",
+                    "elevation_m",
+                    "x",
+                    "y",
+                    "status",
+                    "side",
+                    "locked",
+                    "note",
+                    "created_at"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/sites": {
+      "post": {
+        "operationId": "garden-create-site",
+        "summary": "Create a garden",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "tags": [
+          "Gardens"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "datumNote": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "datum_note": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "created_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "datum_note",
+                    "created_at"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      },
+      "get": {
+        "operationId": "garden-list-sites",
+        "summary": "The gardens in this tenant, with their counts",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Page size. Defaults to 20, capped at 200.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "The previous page's `nextCursor`. Keyset over `created_at` — exclusive, so no row is repeated. Follow the `Link` header rather than assembling this yourself: a cursor is only valid for the sort that issued it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "Walk direction.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Which declared column to walk.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "created_at",
+                "name"
+              ],
+              "default": "created_at"
+            }
+          }
+        ],
+        "tags": [
+          "Gardens"
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of results. The walk is in the response headers.",
+            "headers": {
+              "Link": {
+                "description": "RFC 8288 link to the next page, e.g. `<https://…/customers?limit=20&cursor=01J8Z…>; rel=\"next\"`. Follow it verbatim — it carries this request's filters and page size. Absent when the walk is over, so a client stops rather than fetching an empty page.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "datum_note": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "created_at": {
+                        "type": "string"
+                      },
+                      "points": {
+                        "type": "number"
+                      },
+                      "measurements": {
+                        "type": "number"
+                      },
+                      "features": {
+                        "type": "number"
+                      },
+                      "plants": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "datum_note",
+                      "created_at",
+                      "points",
+                      "measurements",
+                      "features",
+                      "plants"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/constraints/{constraintId}": {
+      "delete": {
+        "operationId": "garden-delete-constraint",
+        "summary": "Remove a constraint; the survey re-solves without it",
+        "parameters": [
+          {
+            "name": "constraintId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "tags": [
+          "Constraints"
+        ],
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "string"
+                    },
+                    "solve": {
+                      "type": "object",
+                      "properties": {
+                        "siteId": {
+                          "type": "string"
+                        },
+                        "moved": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "pointId": {
+                                "type": "string"
+                              },
+                              "from": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "deltaCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "pointId",
+                              "from",
+                              "to",
+                              "deltaCm"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "placed": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "unplaced": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "distances": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "distances"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "needsSide": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "anchors": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              "candidates": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "anchors",
+                              "candidates"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "measurementResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "constraintResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "rmsCm": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "siteId",
+                        "moved",
+                        "placed",
+                        "unplaced",
+                        "needsSide",
+                        "measurementResidualsCm",
+                        "constraintResidualsCm",
+                        "rmsCm"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "deleted",
+                    "solve"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/features/{featureId}": {
+      "delete": {
+        "operationId": "garden-delete-feature",
+        "summary": "Delete a feature (its points stay)",
+        "parameters": [
+          {
+            "name": "featureId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "tags": [
+          "Features"
+        ],
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "deleted"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "garden-update-feature",
+        "summary": "Rename a feature, open or close it, retrace its run or change its properties",
+        "parameters": [
+          {
+            "name": "featureId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "description": "The `ETag` you received when you read this entity. The write is refused with 412 if the entity changed since — re-read and re-apply rather than retrying with the new tag, which would overwrite whatever caused the refusal. `*` means \"it must already exist\".",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "tags": [
+          "Features"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "featureId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "closed": {
+                    "type": "boolean"
+                  },
+                  "vertices": {
+                    "minItems": 2,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "pointId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "curvedToNext": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "pointId"
+                      ]
+                    }
+                  },
+                  "props": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  }
+                },
+                "required": [
+                  "featureId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "headers": {
+              "ETag": {
+                "description": "The entity's current version. Send it back as `If-Match` on the next write to that entity and the write is refused with 412 if anything changed in between. Opaque — compare it, never parse it.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "site_id": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "retention-wall",
+                        "pool",
+                        "terrace",
+                        "stairs",
+                        "house",
+                        "fence",
+                        "bed",
+                        "path"
+                      ]
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "closed": {
+                      "type": "number"
+                    },
+                    "props_json": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "site_id",
+                    "type",
+                    "name",
+                    "closed",
+                    "props_json",
+                    "created_at"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "description": "The entity changed since the `ETag` you sent as `If-Match`. Carries `code`: `precondition_failed`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/measurements/{measurementId}": {
+      "delete": {
+        "operationId": "garden-delete-measurement",
+        "summary": "Delete a tape pull; the survey re-solves from what survives",
+        "parameters": [
+          {
+            "name": "measurementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "tags": [
+          "Survey"
+        ],
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "string"
+                    },
+                    "solve": {
+                      "type": "object",
+                      "properties": {
+                        "siteId": {
+                          "type": "string"
+                        },
+                        "moved": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "pointId": {
+                                "type": "string"
+                              },
+                              "from": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "deltaCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "pointId",
+                              "from",
+                              "to",
+                              "deltaCm"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "placed": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "unplaced": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "distances": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "distances"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "needsSide": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "anchors": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              "candidates": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "anchors",
+                              "candidates"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "measurementResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "constraintResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "rmsCm": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "siteId",
+                        "moved",
+                        "placed",
+                        "unplaced",
+                        "needsSide",
+                        "measurementResidualsCm",
+                        "constraintResidualsCm",
+                        "rmsCm"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "deleted",
+                    "solve"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/points/{pointId}": {
+      "delete": {
+        "operationId": "garden-delete-point",
+        "summary": "Delete a point and every tape pull and constraint that used it",
+        "parameters": [
+          {
+            "name": "pointId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "tags": [
+          "Survey"
+        ],
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "string"
+                    },
+                    "solve": {
+                      "type": "object",
+                      "properties": {
+                        "siteId": {
+                          "type": "string"
+                        },
+                        "moved": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "pointId": {
+                                "type": "string"
+                              },
+                              "from": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "deltaCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "pointId",
+                              "from",
+                              "to",
+                              "deltaCm"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "placed": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "unplaced": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "distances": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "distances"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "needsSide": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "anchors": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              "candidates": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "anchors",
+                              "candidates"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "measurementResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "constraintResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "rmsCm": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "siteId",
+                        "moved",
+                        "placed",
+                        "unplaced",
+                        "needsSide",
+                        "measurementResidualsCm",
+                        "constraintResidualsCm",
+                        "rmsCm"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "deleted",
+                    "solve"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "garden-update-point",
+        "summary": "Rename a point, set its elevation or note, or lock its position",
+        "parameters": [
+          {
+            "name": "pointId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "description": "The `ETag` you received when you read this entity. The write is refused with 412 if the entity changed since — re-read and re-apply rather than retrying with the new tag, which would overwrite whatever caused the refusal. `*` means \"it must already exist\".",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "description": "Send `If-Match` with the `ETag` a read returned to refuse a stale edit.",
+        "tags": [
+          "Survey"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pointId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "elevationM": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "locked": {
+                    "type": "boolean"
+                  },
+                  "note": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "pointId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "headers": {
+              "ETag": {
+                "description": "The entity's current version. Send it back as `If-Match` on the next write to that entity and the write is refused with 412 if anything changed in between. Opaque — compare it, never parse it.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pointId": {
+                      "type": "string"
+                    },
+                    "point": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "site_id": {
+                          "type": "string"
+                        },
+                        "seq": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "elevation_m": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "x": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "y": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "named",
+                            "measured",
+                            "placed"
+                          ]
+                        },
+                        "side": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "locked": {
+                          "type": "number"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "site_id",
+                        "seq",
+                        "name",
+                        "elevation_m",
+                        "x",
+                        "y",
+                        "status",
+                        "side",
+                        "locked",
+                        "note",
+                        "created_at"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "solve": {
+                      "type": "object",
+                      "properties": {
+                        "siteId": {
+                          "type": "string"
+                        },
+                        "moved": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "pointId": {
+                                "type": "string"
+                              },
+                              "from": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "deltaCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "pointId",
+                              "from",
+                              "to",
+                              "deltaCm"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "placed": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "unplaced": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "distances": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "distances"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "needsSide": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "anchors": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              "candidates": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "anchors",
+                              "candidates"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "measurementResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "constraintResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "rmsCm": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "siteId",
+                        "moved",
+                        "placed",
+                        "unplaced",
+                        "needsSide",
+                        "measurementResidualsCm",
+                        "constraintResidualsCm",
+                        "rmsCm"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "pointId",
+                    "point",
+                    "solve"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "description": "The entity changed since the `ETag` you sent as `If-Match`. Carries `code`: `precondition_failed`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/sites/{siteId}/dxf": {
+      "get": {
+        "operationId": "garden-export-dxf",
+        "summary": "The garden as ASCII DXF (R12): points with Z = elevation, one layer per feature type, mature canopies",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "description": "Viewers may export. SKP is a deliberate no; DXF is the interchange path.",
+        "tags": [
+          "Export"
+        ],
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "siteId": {
+                      "type": "string"
+                    },
+                    "filename": {
+                      "type": "string"
+                    },
+                    "dxf": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "siteId",
+                    "filename",
+                    "dxf"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/sites/{siteId}": {
+      "get": {
+        "operationId": "garden-get-site",
+        "summary": "A garden in full: points, tape pulls, constraints, features, plants and the current solve",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "tags": [
+          "Gardens"
+        ],
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "site": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "datum_note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "datum_note",
+                        "created_at"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "points": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "site_id": {
+                            "type": "string"
+                          },
+                          "seq": {
+                            "type": "number"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "elevation_m": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "x": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "y": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "named",
+                              "measured",
+                              "placed"
+                            ]
+                          },
+                          "side": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "locked": {
+                            "type": "number"
+                          },
+                          "note": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "created_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "site_id",
+                          "seq",
+                          "name",
+                          "elevation_m",
+                          "x",
+                          "y",
+                          "status",
+                          "side",
+                          "locked",
+                          "note",
+                          "created_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "measurements": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "site_id": {
+                            "type": "string"
+                          },
+                          "point_a": {
+                            "type": "string"
+                          },
+                          "point_b": {
+                            "type": "string"
+                          },
+                          "distance_m": {
+                            "type": "number"
+                          },
+                          "note": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "created_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "site_id",
+                          "point_a",
+                          "point_b",
+                          "distance_m",
+                          "note",
+                          "created_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "constraints": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "site_id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "right-angle",
+                              "parallel",
+                              "equal-length",
+                              "colinear"
+                            ]
+                          },
+                          "points_json": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "points": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "site_id",
+                          "kind",
+                          "points_json",
+                          "created_at",
+                          "points"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "features": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "site_id": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "retention-wall",
+                              "pool",
+                              "terrace",
+                              "stairs",
+                              "house",
+                              "fence",
+                              "bed",
+                              "path"
+                            ]
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "closed": {
+                            "type": "number"
+                          },
+                          "props_json": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "vertices": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "point_id": {
+                                  "type": "string"
+                                },
+                                "seq": {
+                                  "type": "number"
+                                },
+                                "curved_to_next": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "point_id",
+                                "seq",
+                                "curved_to_next"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "props": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "site_id",
+                          "type",
+                          "name",
+                          "closed",
+                          "props_json",
+                          "created_at",
+                          "vertices",
+                          "props"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "plants": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "site_id": {
+                            "type": "string"
+                          },
+                          "point_id": {
+                            "type": "string"
+                          },
+                          "species_id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "planted_on": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "note": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "species": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "common_name": {
+                                "type": "string"
+                              },
+                              "latin_name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "category": {
+                                "type": "string",
+                                "enum": [
+                                  "tree",
+                                  "shrub",
+                                  "hedge",
+                                  "perennial",
+                                  "climber"
+                                ]
+                              },
+                              "mature_canopy_m": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "mature_height_m": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "years_to_mature": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "created_at": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "common_name",
+                              "latin_name",
+                              "category",
+                              "mature_canopy_m",
+                              "mature_height_m",
+                              "years_to_mature",
+                              "created_at"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "site_id",
+                          "point_id",
+                          "species_id",
+                          "label",
+                          "planted_on",
+                          "note",
+                          "created_at",
+                          "species"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "solve": {
+                      "type": "object",
+                      "properties": {
+                        "siteId": {
+                          "type": "string"
+                        },
+                        "moved": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "pointId": {
+                                "type": "string"
+                              },
+                              "from": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "deltaCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "pointId",
+                              "from",
+                              "to",
+                              "deltaCm"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "placed": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "unplaced": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "distances": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "distances"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "needsSide": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "anchors": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              "candidates": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "anchors",
+                              "candidates"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "measurementResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "constraintResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "rmsCm": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "siteId",
+                        "moved",
+                        "placed",
+                        "unplaced",
+                        "needsSide",
+                        "measurementResidualsCm",
+                        "constraintResidualsCm",
+                        "rmsCm"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "site",
+                    "points",
+                    "measurements",
+                    "constraints",
+                    "features",
+                    "plants",
+                    "solve"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/species": {
+      "get": {
+        "operationId": "garden-list-species",
+        "summary": "The species library, alphabetical",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Page size. Defaults to 20, capped at 200.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "The previous page's `nextCursor`. Keyset over `common_name` — exclusive, so no row is repeated. Follow the `Link` header rather than assembling this yourself: a cursor is only valid for the sort that issued it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "Walk direction.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Which declared column to walk.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "common_name",
+                "created_at"
+              ],
+              "default": "common_name"
+            }
+          }
+        ],
+        "tags": [
+          "Plants"
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of results. The walk is in the response headers.",
+            "headers": {
+              "Link": {
+                "description": "RFC 8288 link to the next page, e.g. `<https://…/customers?limit=20&cursor=01J8Z…>; rel=\"next\"`. Follow it verbatim — it carries this request's filters and page size. Absent when the walk is over, so a client stops rather than fetching an empty page.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "common_name": {
+                        "type": "string"
+                      },
+                      "latin_name": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "category": {
+                        "type": "string",
+                        "enum": [
+                          "tree",
+                          "shrub",
+                          "hedge",
+                          "perennial",
+                          "climber"
+                        ]
+                      },
+                      "mature_canopy_m": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "mature_height_m": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "years_to_mature": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "created_at": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "common_name",
+                      "latin_name",
+                      "category",
+                      "mature_canopy_m",
+                      "mature_height_m",
+                      "years_to_mature",
+                      "created_at"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      },
+      "put": {
+        "operationId": "garden-upsert-species",
+        "summary": "Add a species to the library, or update one by id",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "tags": [
+          "Plants"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "commonName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "latinName": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "tree",
+                      "shrub",
+                      "hedge",
+                      "perennial",
+                      "climber"
+                    ]
+                  },
+                  "matureCanopyM": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "matureHeightM": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "yearsToMature": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "commonName",
+                  "category"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "common_name": {
+                      "type": "string"
+                    },
+                    "latin_name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "tree",
+                        "shrub",
+                        "hedge",
+                        "perennial",
+                        "climber"
+                      ]
+                    },
+                    "mature_canopy_m": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "mature_height_m": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "years_to_mature": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "created_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "common_name",
+                    "latin_name",
+                    "category",
+                    "mature_canopy_m",
+                    "mature_height_m",
+                    "years_to_mature",
+                    "created_at"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/sites/{siteId}/constraints/preview": {
+      "post": {
+        "operationId": "garden-preview-constraint",
+        "summary": "Dry-run a constraint: what would it move, and by how much",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "description": "Read-only: reports what the constraint would move before it is applied.",
+        "tags": [
+          "Constraints"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "siteId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "right-angle",
+                      "parallel",
+                      "equal-length",
+                      "colinear"
+                    ]
+                  },
+                  "pointIds": {
+                    "minItems": 3,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "required": [
+                  "siteId",
+                  "kind",
+                  "pointIds"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "siteId": {
+                      "type": "string"
+                    },
+                    "moved": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "pointId": {
+                            "type": "string"
+                          },
+                          "from": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "x": {
+                                "type": "number"
+                              },
+                              "y": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "deltaCm": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "pointId",
+                          "from",
+                          "to",
+                          "deltaCm"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "placed": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "unplaced": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "distances": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "distances"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "needsSide": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "anchors": {
+                            "type": "array",
+                            "prefixItems": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ],
+                            "items": false,
+                            "minItems": 2,
+                            "maxItems": 2
+                          },
+                          "candidates": {
+                            "type": "array",
+                            "prefixItems": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ],
+                            "items": false,
+                            "minItems": 2,
+                            "maxItems": 2
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "anchors",
+                          "candidates"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "measurementResidualsCm": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    },
+                    "constraintResidualsCm": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    },
+                    "rmsCm": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "siteId",
+                    "moved",
+                    "placed",
+                    "unplaced",
+                    "needsSide",
+                    "measurementResidualsCm",
+                    "constraintResidualsCm",
+                    "rmsCm"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/plants/{plantId}": {
+      "delete": {
+        "operationId": "garden-remove-plant",
+        "summary": "Remove a plant",
+        "parameters": [
+          {
+            "name": "plantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "tags": [
+          "Plants"
+        ],
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "deleted"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/sites/{siteId}/solve": {
+      "post": {
+        "operationId": "garden-solve",
+        "summary": "Re-solve the whole survey and persist the coordinates",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "description": "The solver is the only writer of point coordinates.",
+        "tags": [
+          "Survey"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "siteId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "siteId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "siteId": {
+                      "type": "string"
+                    },
+                    "moved": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "pointId": {
+                            "type": "string"
+                          },
+                          "from": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "to": {
+                            "type": "object",
+                            "properties": {
+                              "x": {
+                                "type": "number"
+                              },
+                              "y": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "deltaCm": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "pointId",
+                          "from",
+                          "to",
+                          "deltaCm"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "placed": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "unplaced": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "distances": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "distances"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "needsSide": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "anchors": {
+                            "type": "array",
+                            "prefixItems": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ],
+                            "items": false,
+                            "minItems": 2,
+                            "maxItems": 2
+                          },
+                          "candidates": {
+                            "type": "array",
+                            "prefixItems": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ],
+                            "items": false,
+                            "minItems": 2,
+                            "maxItems": 2
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "anchors",
+                          "candidates"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "measurementResidualsCm": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    },
+                    "constraintResidualsCm": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    },
+                    "rmsCm": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "siteId",
+                    "moved",
+                    "placed",
+                    "unplaced",
+                    "needsSide",
+                    "measurementResidualsCm",
+                    "constraintResidualsCm",
+                    "rmsCm"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/entities/{entityType}/{entityId}/timeline": {
+      "get": {
+        "operationId": "garden-timeline",
+        "summary": "An entity's event history off the audit spine — why did the pool move 12 cm last Tuesday",
+        "parameters": [
+          {
+            "name": "entityType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Page size. Defaults to 20, capped at 200.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "The previous page's `nextCursor`. Keyset over `id` — exclusive, so no row is repeated. Follow the `Link` header rather than assembling this yourself: a cursor is only valid for the sort that issued it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "Walk direction.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc"
+            }
+          }
+        ],
+        "tags": [
+          "Audit"
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of results. The walk is in the response headers.",
+            "headers": {
+              "Link": {
+                "description": "RFC 8288 link to the next page, e.g. `<https://…/customers?limit=20&cursor=01J8Z…>; rel=\"next\"`. Follow it verbatim — it carries this request's filters and page size. Absent when the walk is over, so a client stops rather than fetching an empty page.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+                      },
+                      "type": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9-]+\\.[a-z0-9-]+$"
+                      },
+                      "occurredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                      },
+                      "actor": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "system": {
+                                "type": "string",
+                                "pattern": "^(@[a-z0-9-~][a-z0-9-._~]*\\/)?[a-z0-9-~][a-z0-9-._~]*$"
+                              }
+                            },
+                            "required": [
+                              "system"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "connection": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "connection"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      },
+                      "payload": {},
+                      "authorization": {
+                        "anyOf": [
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "permission": {
+                                  "type": "string",
+                                  "pattern": "^[a-z0-9-]+:[a-z0-9-]+$"
+                                },
+                                "grant": {
+                                  "type": "string",
+                                  "pattern": "^[a-z0-9_-]+:[^\\s]+$"
+                                }
+                              },
+                              "required": [
+                                "permission"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "impersonation": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "session": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "by": {
+                                "type": "string",
+                                "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+                              }
+                            },
+                            "required": [
+                              "session",
+                              "by"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "piiClass": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "pseudonymous",
+                          "direct"
+                        ]
+                      },
+                      "subjectId": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "type",
+                      "occurredAt",
+                      "actor",
+                      "payload",
+                      "authorization",
+                      "impersonation",
+                      "piiClass",
+                      "subjectId"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/whoami": {
+      "get": {
+        "operationId": "garden-whoami",
+        "summary": "The caller's role hint for the app shell, derived from the same two grants every operation checks",
+        "tags": [
+          "Session"
+        ],
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "garden-owner",
+                        "garden-viewer"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "role"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "unauthenticated",
+              "permission_denied",
+              "forbidden",
+              "not_found",
+              "conflict",
+              "validation_failed",
+              "precondition_failed",
+              "rate_limited",
+              "unavailable",
+              "internal"
+            ]
+          },
+          "permission": {
+            "type": "string",
+            "minLength": 1
+          },
+          "entity": {
+            "type": "object",
+            "properties": {
+              "entityType": {
+                "type": "string",
+                "minLength": 1
+              },
+              "entityId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "entityType",
+              "entityId"
+            ],
+            "additionalProperties": false
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "retryAfter": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "responses": {
+      "ValidationFailed": {
+        "description": "Validation failed — the input did not parse against the operation schema. Carries `code`: `validation_failed`.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Unauthenticated": {
+        "description": "No session — sign in (or present a bearer token) first. Carries `code`: `unauthenticated`.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Refused — the caller lacks the permission this operation checks, or policy forbids it. Carries `code`: `permission_denied` or `forbidden`.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Unknown operation, or an entity named in the input does not exist. Carries `code`: `not_found`.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Conflicts with current state — an illegal transition, a name already taken, or a record that is immutable now. Carries `code`: `conflict`.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Internal error. The body carries no `detail`, deliberately — an unreviewed message is not disclosed on a multi-tenant surface. Carries `code`: `internal`.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Unavailable": {
+        "description": "The deployment cannot serve this — a required platform facility is unconfigured. Carries `code`: `unavailable`.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "sb_session",
+        "description": "The vertical's session cookie. Instances on the Better-Auth provider use its cookie instead; same-origin requests carry either automatically."
+      },
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "session": []
+    },
+    {
+      "bearer": []
+    }
+  ]
+}
