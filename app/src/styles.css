@@ -529,3 +529,35 @@ wa-tab-group.tabs wa-tab-panel {
   padding: 0 3px;
   margin-left: 4px;
 }
+
+/* ── JSON editor ── */
+.json-editor {
+  width: 100%;
+  min-height: 40vh;
+  font: 12px/1.4 var(--mono);
+  border: 1px solid var(--border);
+  background: var(--white);
+  padding: 8px;
+  resize: vertical;
+}
+.file-pick input[type='file'] {
+  display: none;
+}
+.import-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.import-step {
+  font: 12px var(--mono);
+  padding: 2px 0;
+}
+.import-step.delete {
+  color: var(--bad);
+}
+.import-step.add {
+  color: var(--good);
+}
+.import-step.done {
+  opacity: 0.5;
+}

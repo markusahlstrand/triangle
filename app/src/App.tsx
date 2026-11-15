@@ -38,6 +38,7 @@ import {
 import type { Feature } from './api';
 import { MembersSheet } from './Members';
 import { AssistantDrawer } from './Assistant';
+import { JsonSheet } from './JsonSheet';
 import { closeSheet, gardenPath, navigate, useRoute } from './router';
 
 // ============================================================================
@@ -355,6 +356,7 @@ function SiteView(props: {
   // `?on=` names the view under a panel that is not itself a tab (`/assistant?on=measurements`).
   const tab: Tab = COLLECTION_TAB[col ?? ''] ?? COLLECTION_TAB[route.query.get('on') ?? ''] ?? 'points';
   const askOpen = col === 'assistant';
+  const jsonOpen = col === 'json';
   const openAsk = () =>
     navigate(`${base}/assistant?on=${mode === 'map' ? 'map' : TAB_COLLECTION[tab]}`, { sheet: true });
   // ⌘K / Ctrl-K: the assistant, from anywhere in the garden. A key a component already handled
@@ -515,6 +517,9 @@ function SiteView(props: {
             <button className="hud-chip" onClick={() => downloadSurveyJson(site)}>
               ⇩ JSON
             </button>
+            <button className="hud-chip" onClick={() => navigate(`${base}/json?on=map`, { sheet: true })}>
+              {'{ }'} Edit JSON
+            </button>
           </div>
           {picking && (
             <div className="tray pick-banner">
@@ -668,6 +673,9 @@ function SiteView(props: {
         </div>
       )}
 
+      {jsonOpen && (
+        <JsonSheet site={site} readOnly={readOnly} onClose={() => closeSheet(background)} onApplied={props.refresh} />
+      )}
       {askOpen && <AssistantDrawer siteId={site.site.id} siteName={site.site.name} onClose={() => closeSheet(background)} />}
 
       {/* Sheets */}

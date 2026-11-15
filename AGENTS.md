@@ -372,6 +372,13 @@ module code (rule 2), and never add a provider key to the project. It reads; it 
 every taped triangle, ranked by how many triangles a pull breaks, never accusing a verified pull),
 `distance_range`, `what_if` (drop / re-read pulls, force a point onto its mirror side — nothing
 saved) and `typo_search` (a zero too many or too few, two digits swapped).
+
+**Editing as JSON.** "{ } Edit JSON" (`/gardens/:id/json`) shows the survey in the export's shape,
+editable. `app/src/surveyImport.ts` diffs the edited text against the garden and plans it as
+ordinary operations (create/update point, add/delete measurement, set-measurement-verified) — a
+preview first, then applied one operation at a time, each on the History. There is no bulk-write
+endpoint and no edit-measurement operation: a changed distance is delete + add. Points missing
+from the file are kept; constraints, features and plants are read-only there.
 Locally it answers only if this machine has `ANTHROPIC_API_KEY`; otherwise it says no model is available.
 
 **Run it.** `pnpm dev` starts the API (:8871, tsx watch) + the Vite app (:5174,
