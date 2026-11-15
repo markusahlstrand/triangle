@@ -45,7 +45,7 @@ import { MembersSheet } from './Members';
 type SheetState =
   | { kind: 'none' }
   | { kind: 'add-point' }
-  | { kind: 'add-measurement'; from?: string }
+  | { kind: 'add-measurement'; from?: string; to?: string }
   | { kind: 'point'; id: string }
   | { kind: 'measurement'; id: string }
   | { kind: 'mirror'; choice: MirrorChoice }
@@ -322,6 +322,9 @@ function SiteView(props: {
   const [overlays, setOverlays] = useState<Overlays>({ tape: false, elevations: true, canopies: true });
   const [sheet, setSheet] = useState<SheetState>({ kind: 'none' });
   const [selected, setSelected] = useState<string | null>(null);
+  // Picking one end of a new measurement on the map: the sheet steps aside, the next tap on a
+  // point fills that end, and the sheet comes back with both ends as they stand.
+  const [picking, setPicking] = useState<{ which: 'a' | 'b'; a: string | null; b: string | null } | null>(null);
   const action = useAction(props.refresh);
 
   const byId = useMemo(() => new Map(site.points.map((p) => [p.id, p])), [site]);
@@ -331,6 +334,15 @@ function SiteView(props: {
     void action.run(() => api.chooseSide({ pointId: choice.id, side }));
 
   const close = () => setSheet({ kind: 'none' });
+  const backToSheet = (a: string | null, b: string | null) => {
+    setPicking(null);
+    setSheet({ kind: 'add-measurement', from: a ?? undefined, to: b ?? undefined });
+  };
+  const pickOnMap = (which: 'a' | 'b', a: string | null, b: string | null) => {
+    setMode('map');
+    setSheet({ kind: 'none' });
+    setPicking({ which, a, b });
+  };
 
   return (
     <>
@@ -364,10 +376,19 @@ function SiteView(props: {
             selected={selected}
             pendingMirror={pendingMirror}
             onSelectPoint={(id) => {
+              if (picking) {
+                const other = picking.which === 'a' ? picking.b : picking.a;
+                if (id === other) return; // a tape pull needs two different points
+                if (picking.which === 'a') backToSheet(id, picking.b);
+                else backToSheet(picking.a, id);
+                return;
+              }
               setSelected(id);
               setSheet({ kind: 'point', id });
             }}
-            onSelectMeasurement={(id) => setSheet({ kind: 'measurement', id })}
+            onSelectMeasurement={(id) => {
+              if (!picking) setSheet({ kind: 'measurement', id });
+            }}
             onPickSide={pickSide}
             onTrayPoint={(id) => setSheet({ kind: 'point', id })}
           />
@@ -385,7 +406,19 @@ function SiteView(props: {
               ⇩ DXF
             </button>
           </div>
-          {!readOnly && (
+          {picking && (
+            <div className="tray pick-banner">
+              <div className="section-label">New measurement</div>
+              <div>
+                Tap the <strong>{picking.which === 'a' ? 'From' : 'To'}</strong> point
+                {picking.which === 'b' && picking.a ? ` (from ${byId.get(picking.a)?.name})` : ''}
+              </div>
+              <wa-button size="small" appearance="outlined" onClick={() => backToSheet(picking.a, picking.b)}>
+                Back to the list
+              </wa-button>
+            </div>
+          )}
+          {!readOnly && !picking && (
             <button className="map-fab" onClick={() => setSheet({ kind: 'add-measurement' })}>
               + Measurement
             </button>
@@ -512,7 +545,14 @@ function SiteView(props: {
       {/* Sheets */}
       {sheet.kind === 'add-point' && <AddPointSheet site={site} onClose={close} onSaved={props.refresh} />}
       {sheet.kind === 'add-measurement' && (
-        <AddMeasurementSheet site={site} initialA={sheet.from} onClose={close} onSaved={props.refresh} />
+        <AddMeasurementSheet
+          site={site}
+          initialA={sheet.from}
+          initialB={sheet.to}
+          onClose={close}
+          onSaved={props.refresh}
+          onPickOnMap={pickOnMap}
+        />
       )}
       {sheet.kind === 'point' && (
         <PointDetailSheet

@@ -183,11 +183,14 @@ const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCas
 export function AddMeasurementSheet(props: {
   site: SitePayload;
   initialA?: string;
+  initialB?: string;
   onClose: () => void;
   onSaved: (solve: SolveReport) => Promise<void>;
+  /** Hand the picking of one end to the map; the sheet reopens with what is chosen so far. */
+  onPickOnMap?: (which: 'a' | 'b', a: string | null, b: string | null) => void;
 }) {
   const [a, setA] = useState<string | null>(props.initialA ?? null);
-  const [b, setB] = useState<string | null>(null);
+  const [b, setB] = useState<string | null>(props.initialB ?? null);
   const [cm, setCm] = useState('');
   const [result, setResult] = useState<string | null>(null);
   const action = useAction(() => {});
@@ -263,7 +266,12 @@ export function AddMeasurementSheet(props: {
       {action.error && <ErrorNote>{action.error}</ErrorNote>}
       <div className="field">
         <div className="section-label">From {a ? `· ${byId.get(a)?.name}` : '· pick a point'}</div>
-        {!a && <PointPicker site={props.site} selected={a} onPick={setA} />}
+        {!a && props.onPickOnMap && (
+          <wa-button class="change" size="small" appearance="plain" onClick={() => props.onPickOnMap!('a', a, b)}>
+            Pick on map
+          </wa-button>
+        )}
+        {!a && <PointPicker site={props.site} exclude={b ? [b] : []} selected={a} onPick={setA} />}
         {a && (
           <wa-button class="change" size="small" appearance="plain" onClick={() => setA(null)}>
             change
@@ -273,6 +281,11 @@ export function AddMeasurementSheet(props: {
       {a && (
         <div className="field">
           <div className="section-label">To {b ? `· ${byId.get(b)?.name}` : '· pick a point'}</div>
+          {!b && props.onPickOnMap && (
+            <wa-button class="change" size="small" appearance="plain" onClick={() => props.onPickOnMap!('b', a, b)}>
+              Pick on map
+            </wa-button>
+          )}
           {!b && <PointPicker site={props.site} exclude={[a]} selected={b} onPick={setB} />}
           {b && (
             <wa-button class="change" size="small" appearance="plain" onClick={() => setB(null)}>
