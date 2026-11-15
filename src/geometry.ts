@@ -139,6 +139,114 @@ export function solveGarden(
   measurements: SolveMeasurement[],
   constraints: SolveConstraint[],
 ): SolveResult {
+  // Placing one point at a time from two placed neighbours is exact while the tape agrees, but
+  // a network can be rigid without any point having two placed neighbours in turn (two rigid
+  // clusters held by three pulls between them), and one bad pull early in the order sends every
+  // later side choice the wrong way, past where the adjustment can pull it back. So when the
+  // incremental placement leaves anything unplaced or the tape disagrees, also start from a
+  // GLOBAL guess — every point at once, from all the distances (classical MDS over the
+  // shortest-path distances), in both mirror images — and keep whichever result places the
+  // most points and fits the tape best.
+  const incremental = solveFrom(points, measurements, constraints);
+  const worst = Math.max(0, ...incremental.measurementResiduals.values());
+  const allPlaced = incremental.placed.length + incremental.needsSide.length === placeable(points, measurements);
+  if (allPlaced && worst <= GLOBAL_FALLBACK_M) return incremental;
+  let best = incremental;
+  for (const seeds of globalSeeds(points, measurements)) {
+    const r = solveFrom(points, measurements, constraints, seeds);
+    if (r.placed.length > best.placed.length || (r.placed.length === best.placed.length && fitOf(r) < fitOf(best) - 1e-9)) {
+      best = r;
+    }
+  }
+  return best;
+}
+
+/** Below this worst residual the incremental placement is trusted as it stands. */
+const GLOBAL_FALLBACK_M = 0.02;
+
+/** Points with at least two distinct taped neighbours — the most any placement can place. */
+function placeable(points: SolvePoint[], measurements: SolveMeasurement[]): number {
+  const ids = new Set(points.map((p) => p.id));
+  const nbrs = new Map<string, Set<string>>();
+  for (const m of measurements) {
+    if (!ids.has(m.a) || !ids.has(m.b) || m.a === m.b || !(m.d > 0)) continue;
+    (nbrs.get(m.a) ?? nbrs.set(m.a, new Set()).get(m.a)!).add(m.b);
+    (nbrs.get(m.b) ?? nbrs.set(m.b, new Set()).get(m.b)!).add(m.a);
+  }
+  return points.filter((p, i) => i < 2 || p.locked || (nbrs.get(p.id)?.size ?? 0) >= 2).length;
+}
+
+/** The weighted misfit a solve leaves — what "fits best" compares. */
+function fitOf(r: SolveResult): number {
+  let s = 0;
+  for (const v of r.measurementResiduals.values()) s += v * v;
+  for (const v of r.constraintResiduals.values()) s += (CONSTRAINT_WEIGHT * v) ** 2;
+  return s;
+}
+
+/**
+ * A rough position for every point reachable from the origin, at once: classical MDS over the
+ * shortest-path distances of the tape network, turned into the survey's frame (origin at 0,0,
+ * baseline on +x). Returned in BOTH mirror images — the tape cannot tell them apart; the
+ * adjustment and the side choices can.
+ */
+export function globalSeeds(points: SolvePoint[], measurements: SolveMeasurement[]): Map<string, XY>[] {
+  const ids = points.map((p) => p.id);
+  const n = ids.length;
+  if (n < 3) return [];
+  const at = new Map(ids.map((id, i) => [id, i]));
+  const D: number[][] = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? 0 : Infinity)));
+  for (const m of measurements) {
+    const i = at.get(m.a);
+    const j = at.get(m.b);
+    if (i === undefined || j === undefined || i === j || !(m.d > 0)) continue;
+    D[i]![j] = D[j]![i] = Math.min(D[i]![j]!, m.d);
+  }
+  for (let k = 0; k < n; k++)
+    for (let i = 0; i < n; i++)
+      for (let j = 0; j < n; j++) if (D[i]![k]! + D[k]![j]! < D[i]![j]!) D[i]![j] = D[i]![k]! + D[k]![j]!;
+  const S = ids.map((_, i) => i).filter((i) => Number.isFinite(D[0]![i]!));
+  if (S.length < 3) return [];
+  const m = S.length;
+  // B = −½ J D² J, the Gram matrix of centred positions.
+  const D2 = S.map((i) => S.map((j) => D[i]![j]! ** 2));
+  const rowMean = D2.map((r) => r.reduce((a, b) => a + b, 0) / m);
+  const all = rowMean.reduce((a, b) => a + b, 0) / m;
+  const Bm = D2.map((r, i) => r.map((v, j) => -0.5 * (v - rowMean[i]! - rowMean[j]! + all)));
+  const eig = (deflate: number[][]): [number[], number] => {
+    let v = Array.from({ length: m }, (_, i) => Math.sin(i + 1) + 0.5);
+    let lambda = 0;
+    for (let it = 0; it < 200; it++) {
+      const w = Bm.map((r) => r.reduce((a, b, j) => a + b * v[j]!, 0));
+      for (const [u, l] of deflate.map((u) => [u, u.reduce((a, b, j) => a + b * w[j]!, 0)] as const)) {
+        for (let j = 0; j < m; j++) w[j]! -= l * u[j]!;
+      }
+      const norm = Math.hypot(...w);
+      if (norm < EPS) break;
+      lambda = norm;
+      v = w.map((x) => x / norm);
+    }
+    return [v, lambda];
+  };
+  const [v1, l1] = eig([]);
+  const [v2, l2] = eig([v1]);
+  const raw = S.map((_, k) => ({ x: v1[k]! * Math.sqrt(l1), y: v2[k]! * Math.sqrt(Math.max(l2, 0)) }));
+  // Into the survey's frame: origin to (0,0), baseline onto +x.
+  const o = raw[0]!;
+  const bIdx = S.indexOf(1);
+  const angle = bIdx >= 0 ? Math.atan2(raw[bIdx]!.y - o.y, raw[bIdx]!.x - o.x) : 0;
+  const [c, s] = [Math.cos(-angle), Math.sin(-angle)];
+  const framed = raw.map((p) => ({ x: (p.x - o.x) * c - (p.y - o.y) * s, y: (p.x - o.x) * s + (p.y - o.y) * c }));
+  const asMap = (flip: 1 | -1) => new Map(S.map((i, k) => [ids[i]!, { x: framed[k]!.x, y: flip * framed[k]!.y }]));
+  return [asMap(1), asMap(-1)];
+}
+
+function solveFrom(
+  points: SolvePoint[],
+  measurements: SolveMeasurement[],
+  constraints: SolveConstraint[],
+  seeds?: Map<string, XY>,
+): SolveResult {
   const byId = new Map(points.map((p) => [p.id, p]));
 
   // Average duplicate tape pulls over the same pair (a re-measure refines, not stacks).
@@ -188,6 +296,35 @@ export function solveGarden(
     if (d !== null) coords.set(baseline.id, { x: d, y: 0 });
   }
 
+  // A global start: every point with two or more taped neighbours begins at its seed, and the
+  // adjustment below does the rest. A point with EXACTLY two neighbours is where a side is a real
+  // choice — the seed is put on the side the person chose, the one fact the tape cannot give.
+  if (seeds) {
+    for (const p of points) {
+      const ns = neighboursOf(p.id).length;
+      if (coords.has(p.id) || !seeds.has(p.id) || ns < 2) continue;
+      // Two distances and no side chosen: that point waits for the person, as it always has.
+      if (ns === 2 && p.side === null) continue;
+      coords.set(p.id, { ...seeds.get(p.id)! });
+    }
+    for (const p of points) {
+      const ns = neighboursOf(p.id);
+      if (p.locked || p.side === null || ns.length !== 2 || !coords.has(p.id)) continue;
+      const [a, b] = ns.sort((m, n) => order.get(m.anchor)! - order.get(n.anchor)!);
+      const A = coords.get(a!.anchor);
+      const B = coords.get(b!.anchor);
+      const P = coords.get(p.id)!;
+      if (!A || !B || sideOf(A, B, P) === p.side) continue;
+      const ux = B.x - A.x;
+      const uy = B.y - A.y;
+      const t = ((P.x - A.x) * ux + (P.y - A.y) * uy) / Math.max(ux * ux + uy * uy, EPS);
+      coords.set(p.id, { x: 2 * (A.x + t * ux) - P.x, y: 2 * (A.y + t * uy) - P.y });
+    }
+  }
+
+  // Two-distance points with no side, met on a global start: offered after the adjustment.
+  const waiting = new Set<string>();
+
   // Incremental trilateration until nothing more places.
   let progressed = true;
   while (progressed) {
@@ -200,6 +337,12 @@ export function solveGarden(
       if (placedNs.length < 2) continue;
 
       const [nA, nB] = [placedNs[0]!, placedNs[1]!];
+      // From a global start the anchors sit at rough positions, where two circles can look
+      // tangent: a two-distance point with no side chosen still waits for the person.
+      if (seeds && p.side === null && neighboursOf(p.id).length === 2) {
+        waiting.add(p.id);
+        continue;
+      }
       const A = coords.get(nA.anchor)!;
       const B = coords.get(nB.anchor)!;
       const [c1, c2] = circleIntersection(A, nA.d, B, nB.d);
@@ -216,7 +359,10 @@ export function solveGarden(
       } else if (p.side !== null) {
         chosen = sideOf(A, B, c1) === p.side ? c1 : c2;
       } else {
-        needsSide.push({ id: p.id, anchors: [nA.anchor, nB.anchor], candidates: [c1, c2] });
+        // Once per point, however many passes the loop takes.
+        if (!needsSide.some((n) => n.id === p.id)) {
+          needsSide.push({ id: p.id, anchors: [nA.anchor, nB.anchor], candidates: [c1, c2] });
+        }
         continue;
       }
       coords.set(p.id, chosen);
@@ -302,6 +448,17 @@ export function solveGarden(
 
   if (vars.length > 0 && residualFns.length > 0) gaussNewton(vars, coords, residualFns);
 
+  // The points that waited on a global start: their two candidates, from where the adjusted
+  // anchors finally are.
+  for (const id of waiting) {
+    const [nA, nB] = neighboursOf(id)
+      .filter((n) => coords.has(n.anchor))
+      .sort((m, n) => order.get(m.anchor)! - order.get(n.anchor)!);
+    if (!nA || !nB) continue;
+    const [c1, c2] = circleIntersection(coords.get(nA.anchor)!, nA.d, coords.get(nB.anchor)!, nB.d);
+    needsSide.push({ id, anchors: [nA.anchor, nB.anchor], candidates: [c1, c2] });
+  }
+
   // ── Report ────────────────────────────────────────────────────────────────
   const measurementResiduals = new Map<string, number>();
   for (const [id, fn] of measResidual) measurementResiduals.set(id, Math.abs(fn()));
@@ -340,7 +497,8 @@ function gaussNewton(
   let lambda = 1e-3;
   let cost = residuals().reduce((s, r) => s + r * r, 0);
 
-  for (let iter = 0; iter < 30; iter++) {
+  // Enough to walk in from a rough global start; a warm start converges in a handful and breaks early.
+  for (let iter = 0; iter < 200; iter++) {
     const r0 = residuals();
     const m = r0.length;
     // Numeric Jacobian.
