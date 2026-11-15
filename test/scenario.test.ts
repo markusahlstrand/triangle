@@ -131,6 +131,23 @@ describe('triangle scenario', () => {
     expect(worst).toBeGreaterThan(0.5); // the disagreement is on the record…
     expect(worst).toBeLessThan(8); // …spread by adjustment, not eaten
 
+    // Verifying a pull is the owner's to do, and a verified pull is never the suspect.
+    const someGood = Object.keys(residuals).find((id) => id !== lying.measurement.id)!;
+    const verified = await markus.invoke<{ measurement: { verified_at: string | null }; solve: SolveReport }>(
+      'garden/set-measurement-verified',
+      { measurementId: someGood, verified: true },
+    );
+    expect(verified.measurement.verified_at).not.toBeNull();
+    expect(verified.solve.suspects.map((x) => x.id)).not.toContain(someGood);
+    await expect(
+      vera.invoke('garden/set-measurement-verified', { measurementId: someGood, verified: false }),
+    ).rejects.toThrow(/permission denied/);
+    const unverified = await markus.invoke<{ measurement: { verified_at: string | null } }>(
+      'garden/set-measurement-verified',
+      { measurementId: someGood, verified: false },
+    );
+    expect(unverified.measurement.verified_at).toBeNull();
+
     // Deleting the bad pull restores the survey.
     const restored = await markus.invoke<{ solve: SolveReport }>('garden/delete-measurement', {
       measurementId: lying.measurement.id,

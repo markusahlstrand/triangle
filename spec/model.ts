@@ -91,6 +91,8 @@ export const gardenEntities = defineEntities({
       distance_m: z.number(),
       note: z.string().nullable(),
       created_at: z.string(),
+      /** When the owner confirmed this pull by re-measuring it; null = not verified. */
+      verified_at: z.string().nullable(),
     }),
     parents: ['site'],
   },
@@ -214,7 +216,8 @@ export const solveReport = z.object({
    */
   suspects: z.array(
     z.object({
-      kind: z.enum(['measurement', 'constraint']),
+      /** `side`: a point placed on the wrong one of its two mirror positions (`id` is the point). */
+    kind: z.enum(['measurement', 'constraint', 'side']),
       id: z.string(),
       /** What the rest of the survey says this distance is (measurements only). */
       expectedCm: z.number().nullable(),
@@ -397,6 +400,25 @@ export const gardenOperations = defineOperations(gardenEntities, GARDEN_PERMISSI
       entity: 'measurement',
       entityIdFrom: 'measurementId',
       type: 'garden.measurement-added',
+      schemaVersion: 1,
+      piiClass: 'none',
+    },
+  },
+
+  'garden/set-measurement-verified': {
+    summary: 'Mark a tape pull as verified (re-measured and confirmed), or take the mark off',
+    permission: 'garden:manage',
+    input: z.object({ measurementId: z.string().min(1), verified: z.boolean() }),
+    output: z.object({
+      measurementId: z.string(),
+      measurement: gardenEntities.measurement.fields,
+      solve: solveReport,
+    }),
+    http: { method: 'POST', path: '/measurements/{measurementId}/verified' },
+    emits: {
+      entity: 'measurement',
+      entityIdFrom: 'measurementId',
+      type: 'garden.measurement-verified',
       schemaVersion: 1,
       piiClass: 'none',
     },

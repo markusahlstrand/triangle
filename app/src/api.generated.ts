@@ -103,6 +103,7 @@ export interface Measurement {
   distance_m: number;
   note: string | null;
   created_at: string;
+  verified_at: string | null;
 }
 
 /** `garden_constraints` — declared in spec/model.ts. */
@@ -167,7 +168,7 @@ export interface SolveReport {
   measurementResidualsCm: Record<string, number>;
   constraintResidualsCm: Record<string, number>;
   rmsCm: number;
-  suspects: ({ kind: "measurement" | "constraint"; id: string; expectedCm: number | null; offByCm: number; explains: number; worstWithoutCm: number })[];
+  suspects: ({ kind: "measurement" | "constraint" | "side"; id: string; expectedCm: number | null; offByCm: number; explains: number; worstWithoutCm: number })[];
 }
 
 /** `sitePayload` — a published schema, not a stored row. */
@@ -326,6 +327,13 @@ export interface TriangleClient {
    * `DELETE /plants/{plantId}` — `garden/remove-plant`
    */
   removePlant(input: { plantId: string }): Promise<{ deleted: string }>;
+
+  /**
+   * Mark a tape pull as verified (re-measured and confirmed), or take the mark off
+   *
+   * `POST /measurements/{measurementId}/verified` — `garden/set-measurement-verified`
+   */
+  setMeasurementVerified(input: { measurementId: string; verified: boolean }): Promise<{ measurementId: string; measurement: Measurement; solve: SolveReport }>;
 
   /**
    * Re-solve the whole survey and persist the coordinates
@@ -579,6 +587,8 @@ export function createClient(options: ClientOptions = {}): TriangleClient {
       send(`/sites/${encodeURIComponent(String(input.siteId))}/constraints/preview`, "POST", omit(input, ["siteId"]), undefined),
     removePlant: (input: Args) =>
       send(`/plants/${encodeURIComponent(String(input.plantId))}`, "DELETE", undefined, omit(input, ["plantId"])),
+    setMeasurementVerified: (input: Args) =>
+      send(`/measurements/${encodeURIComponent(String(input.measurementId))}/verified`, "POST", omit(input, ["measurementId"]), undefined),
     solve: (input: Args) =>
       send(`/sites/${encodeURIComponent(String(input.siteId))}/solve`, "POST", omit(input, ["siteId"]), undefined),
     timeline: (input: Args) =>

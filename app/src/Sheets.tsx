@@ -436,6 +436,20 @@ export function MeasurementSheet(props: {
           </wa-button>
         )}
       </div>
+      {props.readOnly ? (
+        m.verified_at && <div className="meta">✓ Verified {m.verified_at.slice(0, 10)}</div>
+      ) : (
+        <wa-switch
+          checked={m.verified_at !== null}
+          disabled={action.busy}
+          hint="You re-measured it and it is right. A verified pull is never suspected, and the rest of the survey bends to it."
+          onChange={() =>
+            void action.run(() => api.setMeasurementVerified({ measurementId: m.id, verified: m.verified_at === null }))
+          }
+        >
+          Verified{m.verified_at ? ` · ${m.verified_at.slice(0, 10)}` : ''}
+        </wa-switch>
+      )}
       {!props.readOnly && (
         <wa-button
           variant="danger"
@@ -491,7 +505,7 @@ export function PointDetailSheet(props: {
               <span className={`residual ${r === undefined ? 'none' : r <= 2 ? 'good' : r <= 5 ? 'warn' : 'bad'}`} />
               <span>→ {other?.name}</span>
               <span className="right">
-                {Math.round(m.distance_m * 100)} cm{r !== undefined ? ` · ${r.toFixed(1)}` : ''}
+                <MeasuredCm distanceM={m.distance_m} residualCm={r} verified={m.verified_at !== null} />
                 {!props.readOnly && (
                   <RemoveButton
                     what={`tape pull to ${other?.name ?? 'point'}`}
@@ -1082,6 +1096,9 @@ export function suspectLine(s: Suspect, site: SitePayload): string {
     const taped = Math.round(m.distance_m * 100);
     return `${byId.get(m.point_a)} ↔ ${byId.get(m.point_b)}: taped ${taped} cm, the rest says ${Math.round(s.expectedCm ?? 0)} cm`;
   }
+  if (s.kind === 'side') {
+    return `${byId.get(s.id) ?? 'A point'} is probably on the wrong side — flipped, it moves ${s.offByCm.toFixed(0)} cm and the survey agrees`;
+  }
   const c = site.constraints.find((x) => x.id === s.id);
   return c ? `${constraintLabel(c, site)} — the tape says it is off by ${s.offByCm.toFixed(0)} cm` : 'a constraint';
 }
@@ -1090,7 +1107,12 @@ export function suspectLine(s: Suspect, site: SitePayload): string {
  * The verdict, said plainly: one likely culprit, or — when the survey cannot tell — the
  * candidates and what would settle it. Each measurement opens its sheet.
  */
-export function SuspectsNote(props: { site: SitePayload; onOpenMeasurement: (id: string) => void }) {
+export function SuspectsNote(props: {
+  site: SitePayload;
+  onOpenMeasurement: (id: string) => void;
+  /** Flip a point to its other mirror position; absent for a viewer. */
+  onFlipSide?: (pointId: string) => void;
+}) {
   const s = props.site.solve.suspects;
   if (s.length === 0) return null;
   const tied = suspectsAreTied(s);
@@ -1103,6 +1125,13 @@ export function SuspectsNote(props: { site: SitePayload; onOpenMeasurement: (id:
           <button key={x.id} className="meta suspect" onClick={() => props.onOpenMeasurement(x.id)}>
             {suspectLine(x, props.site)}
           </button>
+        ) : x.kind === 'side' && props.onFlipSide ? (
+          <div key={x.id} className="meta suspect">
+            {suspectLine(x, props.site)}{' '}
+            <wa-button size="small" appearance="outlined" onClick={() => props.onFlipSide!(x.id)}>
+              Flip it
+            </wa-button>
+          </div>
         ) : (
           <div key={x.id} className="meta suspect">
             {suspectLine(x, props.site)}
@@ -1115,5 +1144,29 @@ export function SuspectsNote(props: { site: SitePayload; onOpenMeasurement: (id:
           : `Without it, every other distance agrees to ${s[0]!.worstWithoutCm.toFixed(1)} cm. Re-tape it, or delete it.`}
       </div>
     </div>
+  );
+}
+
+/**
+ * A tape pull as a row shows it: the taped distance, then — set apart — how far the adjusted
+ * survey disagrees with it. Two bare numbers side by side read as two measurements.
+ */
+export function MeasuredCm(props: { distanceM: number; residualCm: number | undefined; verified?: boolean }) {
+  const r = props.residualCm;
+  return (
+    <>
+      {props.verified && (
+        <span className="verified-tick" title="Verified — re-measured and confirmed">
+          ✓{' '}
+        </span>
+      )}
+      {Math.round(props.distanceM * 100)} cm
+      {r !== undefined && (
+        <span className="residual-off" title="How far the adjusted survey disagrees with this tape pull">
+          {' '}
+          · off {r.toFixed(1)}
+        </span>
+      )}
+    </>
   );
 }

@@ -116,6 +116,7 @@ function toSolverInput(points: PointRow[], measurements: MeasurementRow[], const
     a: m.point_a,
     b: m.point_b,
     d: m.distance_m,
+    verified: m.verified_at !== null,
   }));
   const solveConstraints = constraints.map(
     (c) => ({ id: c.id, kind: c.kind, points: JSON.parse(c.points_json) }) as SolveConstraint,
@@ -462,6 +463,25 @@ const operations = {
       [id],
     )[0]!;
     return { measurementId: id, measurement, solve };
+  },
+
+  'garden/set-measurement-verified': async (ctx, input) => {
+    assertAllowed(await ctx.check(GARDEN_PERM.manage));
+    const m = ctx.sql.query<MeasurementRow>('SELECT * FROM garden_measurements WHERE id = ?', [
+      input.measurementId,
+    ])[0];
+    if (!m) throw substratError('not_found', `measurement not found: ${input.measurementId}`);
+    const verifiedAt = input.verified ? (m.verified_at ?? ctx.now()) : null;
+    ctx.sql.exec('UPDATE garden_measurements SET verified_at = ? WHERE id = ?', [verifiedAt, m.id]);
+    ctx.emit({
+      type: 'garden.measurement-verified',
+      schemaVersion: 1,
+      entity: { entityType: 'measurement', entityId: m.id },
+      piiClass: 'none',
+      payload: { siteId: m.site_id, measurementId: m.id, verified: input.verified, verifiedAt },
+    });
+    const solve = runSolve(ctx, m.site_id, true);
+    return { measurementId: m.id, measurement: { ...m, verified_at: verifiedAt }, solve };
   },
 
   'garden/delete-measurement': async (ctx, input) => {

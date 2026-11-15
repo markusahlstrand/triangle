@@ -63,7 +63,7 @@ describe('the derived route table, served', () => {
     // Pinned on purpose: adding an operation to the model should make somebody
     // look here, and a derived table that silently mounted nothing must not pass
     // the 4xx checks below by accident.
-    expect(declared).toBe(23);
+    expect(declared).toBe(24);
     expect(mounted).toHaveLength(declared);
     expect(mounted.map((m) => `${m.method} ${m.path}`)).toContain('GET /api/sites/:siteId');
   });
@@ -190,6 +190,6 @@ describe('the derived route table, served', () => {
     const names = body.result.tools.map((t) => t.name);
     expect(names).toContain('garden_export-dxf');
     expect(names).not.toContain('garden_whoami'); // `mcp: false`
-    expect(names).toHaveLength(22);
+    expect(names).toHaveLength(23);
   });
 });

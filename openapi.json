@@ -310,7 +310,8 @@
                                 "type": "string",
                                 "enum": [
                                   "measurement",
-                                  "constraint"
+                                  "constraint",
+                                  "side"
                                 ]
                               },
                               "id": {
@@ -498,6 +499,12 @@
                         },
                         "created_at": {
                           "type": "string"
+                        },
+                        "verified_at": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "required": [
@@ -507,7 +514,8 @@
                         "point_b",
                         "distance_m",
                         "note",
-                        "created_at"
+                        "created_at",
+                        "verified_at"
                       ],
                       "additionalProperties": false
                     },
@@ -703,7 +711,8 @@
                                 "type": "string",
                                 "enum": [
                                   "measurement",
-                                  "constraint"
+                                  "constraint",
+                                  "side"
                                 ]
                               },
                               "id": {
@@ -1278,7 +1287,8 @@
                                 "type": "string",
                                 "enum": [
                                   "measurement",
-                                  "constraint"
+                                  "constraint",
+                                  "side"
                                 ]
                               },
                               "id": {
@@ -2200,7 +2210,8 @@
                                 "type": "string",
                                 "enum": [
                                   "measurement",
-                                  "constraint"
+                                  "constraint",
+                                  "side"
                                 ]
                               },
                               "id": {
@@ -2781,7 +2792,8 @@
                                 "type": "string",
                                 "enum": [
                                   "measurement",
-                                  "constraint"
+                                  "constraint",
+                                  "side"
                                 ]
                               },
                               "id": {
@@ -3096,7 +3108,8 @@
                                 "type": "string",
                                 "enum": [
                                   "measurement",
-                                  "constraint"
+                                  "constraint",
+                                  "side"
                                 ]
                               },
                               "id": {
@@ -3541,7 +3554,8 @@
                                 "type": "string",
                                 "enum": [
                                   "measurement",
-                                  "constraint"
+                                  "constraint",
+                                  "side"
                                 ]
                               },
                               "id": {
@@ -3870,6 +3884,12 @@
                           },
                           "created_at": {
                             "type": "string"
+                          },
+                          "verified_at": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "required": [
@@ -3879,7 +3899,8 @@
                           "point_b",
                           "distance_m",
                           "note",
-                          "created_at"
+                          "created_at",
+                          "verified_at"
                         ],
                         "additionalProperties": false
                       }
@@ -4318,7 +4339,8 @@
                                 "type": "string",
                                 "enum": [
                                   "measurement",
-                                  "constraint"
+                                  "constraint",
+                                  "side"
                                 ]
                               },
                               "id": {
@@ -4994,7 +5016,8 @@
                             "type": "string",
                             "enum": [
                               "measurement",
-                              "constraint"
+                              "constraint",
+                              "side"
                             ]
                           },
                           "id": {
@@ -5113,6 +5136,389 @@
                   },
                   "required": [
                     "deleted"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/measurements/{measurementId}/verified": {
+      "post": {
+        "operationId": "garden-set-measurement-verified",
+        "summary": "Mark a tape pull as verified (re-measured and confirmed), or take the mark off",
+        "parameters": [
+          {
+            "name": "measurementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "A token of your choosing identifying this request. Send the SAME token when retrying and the original response is replayed instead of the work being done again; the reply carries `Idempotency-Replayed: true` when it was. Reusing a token for a different request is refused with 409. Remembered for 24 hours.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "measurementId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "verified": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "measurementId",
+                  "verified"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The operation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "measurementId": {
+                      "type": "string"
+                    },
+                    "measurement": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "site_id": {
+                          "type": "string"
+                        },
+                        "point_a": {
+                          "type": "string"
+                        },
+                        "point_b": {
+                          "type": "string"
+                        },
+                        "distance_m": {
+                          "type": "number"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "verified_at": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "site_id",
+                        "point_a",
+                        "point_b",
+                        "distance_m",
+                        "note",
+                        "created_at",
+                        "verified_at"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "solve": {
+                      "type": "object",
+                      "properties": {
+                        "siteId": {
+                          "type": "string"
+                        },
+                        "moved": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "pointId": {
+                                "type": "string"
+                              },
+                              "from": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "to": {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "deltaCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "pointId",
+                              "from",
+                              "to",
+                              "deltaCm"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "placed": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "unplaced": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "distances": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "distances"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "needsSide": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "anchors": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              "candidates": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "x": {
+                                        "type": "number"
+                                      },
+                                      "y": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "x",
+                                      "y"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ],
+                                "items": false,
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "anchors",
+                              "candidates"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "measurementResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "constraintResidualsCm": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        },
+                        "rmsCm": {
+                          "type": "number"
+                        },
+                        "suspects": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "measurement",
+                                  "constraint",
+                                  "side"
+                                ]
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "expectedCm": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "offByCm": {
+                                "type": "number"
+                              },
+                              "explains": {
+                                "type": "number"
+                              },
+                              "worstWithoutCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id",
+                              "expectedCm",
+                              "offByCm",
+                              "explains",
+                              "worstWithoutCm"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "siteId",
+                        "moved",
+                        "placed",
+                        "unplaced",
+                        "needsSide",
+                        "measurementResidualsCm",
+                        "constraintResidualsCm",
+                        "rmsCm",
+                        "suspects"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "measurementId",
+                    "measurement",
+                    "solve"
                   ],
                   "additionalProperties": false
                 }
@@ -5391,7 +5797,8 @@
                             "type": "string",
                             "enum": [
                               "measurement",
-                              "constraint"
+                              "constraint",
+                              "side"
                             ]
                           },
                           "id": {

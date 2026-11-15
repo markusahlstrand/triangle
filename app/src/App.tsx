@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ApiError,
   LOGIN_URL,
   LINKS,
   api,
   downloadDxf,
+  downloadSurveyJson,
   fetchSession,
   principal,
   redeemLink,
@@ -21,6 +22,7 @@ import {
   ConstraintSheet,
   FeatureSheet,
   MeasurementSheet,
+  MeasuredCm,
   SuspectsNote,
   MirrorSheet,
   PlantSheet,
@@ -35,6 +37,7 @@ import {
 } from './Sheets';
 import type { Feature } from './api';
 import { MembersSheet } from './Members';
+import { closeSheet, gardenPath, navigate, useRoute } from './router';
 
 // ============================================================================
 // The shell: principal picker in the top bar (the dev cast — every entry is a
@@ -58,9 +61,11 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [who, setWho] = useState(principal());
   const [sites, setSites] = useState<SiteSummary[] | null>(null);
-  const [siteId, setSiteId] = useState<string | null>(null);
+  const route = useRoute();
+  // The garden, and whether Members is open, are the URL's (`/gardens/:id/…`, `/members`).
+  const siteId = gardenPath(route.path)?.siteId ?? null;
+  const showMembers = route.path === '/members';
   const [site, setSite] = useState<SitePayload | null>(null);
-  const [showMembers, setShowMembers] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const cast = session?.kind === 'dev' ? session.cast : {};
@@ -86,7 +91,7 @@ export default function App() {
     } catch (e) {
       setError(String((e as Error).message));
       setSite(null);
-      setSiteId(null);
+      navigate('/', { replace: true });
     }
   }, []);
 
@@ -122,15 +127,23 @@ export default function App() {
       setSession(s);
     })();
   }, []);
+  // Switching the dev principal goes home (another principal may not see this garden); the
+  // first sign-in keeps whatever URL was opened, so a deep link survives the login.
+  const lastWho = useRef(who);
   useEffect(() => {
     if (!signedIn) return;
-    setSiteId(null);
-    setSite(null);
+    if (lastWho.current !== who) {
+      lastWho.current = who;
+      setSite(null);
+      navigate('/');
+    }
     void loadSites();
   }, [signedIn, who, loadSites]);
   useEffect(() => {
+    if (!signedIn) return;
     if (siteId) void loadSite(siteId);
-  }, [siteId, loadSite]);
+    else setSite(null);
+  }, [signedIn, siteId, loadSite]);
 
   const switchPrincipal = (p: string) => {
     setPrincipal(p);
@@ -166,14 +179,14 @@ export default function App() {
             show="email"
             onwa-select={(e: Event) => {
               const item = (e as CustomEvent<{ item: { value: string } }>).detail?.item;
-              if (item?.value === 'members') setShowMembers(true);
+              if (item?.value === 'members') navigate('/members', { sheet: true });
             }}
           >
             {session.me.role === 'garden-owner' && <wa-dropdown-item value="members">Members</wa-dropdown-item>}
           </sub-user-menu>
         )}
       </div>
-      {showMembers && <MembersSheet onClose={() => setShowMembers(false)} />}
+      {showMembers && signedIn && <MembersSheet onClose={() => closeSheet('/')} />}
       {error && <ErrorNote>{error}</ErrorNote>}
       {session?.kind === 'anonymous' && (
         <div className="screen">
@@ -198,16 +211,16 @@ export default function App() {
         <Home
           sites={sites}
           readOnly={readOnly}
-          onOpen={setSiteId}
+          onOpen={(id) => navigate(`/gardens/${encodeURIComponent(id)}/map`)}
           onCreated={loadSites}
         />
       )}
-      {signedIn && siteId && site && (
+      {signedIn && siteId && site && site.site.id === siteId && (
         <SiteView
           site={site}
           readOnly={readOnly}
           onBack={() => {
-            setSiteId(null);
+            navigate('/');
             void loadSites();
           }}
           refresh={() => loadSite(siteId)}
@@ -311,6 +324,19 @@ const TABS = [
 ] as const;
 type Tab = (typeof TABS)[number][0];
 
+/** Each list tab is a collection in the URL: `/gardens/:id/measurements` is the Measure tab. */
+const TAB_COLLECTION: Record<Tab, string> = {
+  points: 'points',
+  measure: 'measurements',
+  features: 'features',
+  plants: 'plants',
+  constraints: 'constraints',
+};
+const COLLECTION_TAB = Object.fromEntries(Object.entries(TAB_COLLECTION).map(([t, c]) => [c, t as Tab])) as Record<
+  string,
+  Tab
+>;
+
 function SiteView(props: {
   site: SitePayload;
   readOnly: boolean;
@@ -318,10 +344,58 @@ function SiteView(props: {
   refresh: () => Promise<void>;
 }) {
   const { site, readOnly } = props;
-  const [mode, setMode] = useState<'map' | 'list'>('map');
-  const [tab, setTab] = useState<Tab>('points');
+  const route = useRoute();
+  const base = `/gardens/${encodeURIComponent(site.site.id)}`;
+  const [col, item] = gardenPath(route.path)?.rest ?? [];
+
+  // The view, the tab and the open sheet are all read off the URL; `setMode`, `setTab` and
+  // `setSheet` below navigate. Only the mirror choice (a transient prompt) stays local.
+  const mode: 'map' | 'list' = col === undefined || col === 'map' || route.query.get('on') === 'map' ? 'map' : 'list';
+  const tab: Tab = COLLECTION_TAB[col ?? ''] ?? 'points';
+  const [mirror, setMirror] = useState<MirrorChoice | null>(null);
+  const sheet: SheetState = mirror
+    ? { kind: 'mirror', choice: mirror }
+    : sheetOf(col, item, route.query, site);
+  const background = mode === 'map' ? `${base}/map` : `${base}/${TAB_COLLECTION[tab]}`;
+
+  const setMode = (m: 'map' | 'list') =>
+    navigate(m === 'map' ? `${base}/map` : `${base}/${TAB_COLLECTION[tab]}`, { replace: sheet.kind !== 'none' });
+  const setTab = (t: Tab) => navigate(`${base}/${TAB_COLLECTION[t]}`);
+  const setSheet = (s: SheetState) => {
+    if (s.kind === 'mirror') return setMirror(s.choice);
+    if (s.kind === 'none') return closeSheet(background);
+    const q = new URLSearchParams();
+    if (mode === 'map') q.set('on', 'map');
+    let path: string;
+    switch (s.kind) {
+      case 'add-point':
+        path = `${base}/points/new`;
+        break;
+      case 'point':
+        path = `${base}/points/${encodeURIComponent(s.id)}`;
+        break;
+      case 'add-measurement':
+        path = `${base}/measurements/new`;
+        if (s.from) q.set('from', s.from);
+        if (s.to) q.set('to', s.to);
+        break;
+      case 'measurement':
+        path = `${base}/measurements/${encodeURIComponent(s.id)}`;
+        break;
+      case 'feature':
+        path = `${base}/features/${s.feature ? encodeURIComponent(s.feature.id) : 'new'}`;
+        break;
+      case 'plant':
+        path = `${base}/plants/new`;
+        break;
+      case 'constraint':
+        path = `${base}/constraints/new`;
+        break;
+    }
+    const qs = q.toString();
+    navigate(path + (qs ? `?${qs}` : ''), { sheet: true, replace: sheet.kind !== 'none' && sheet.kind !== 'mirror' });
+  };
   const [overlays, setOverlays] = useState<Overlays>({ tape: false, elevations: true, canopies: true });
-  const [sheet, setSheet] = useState<SheetState>({ kind: 'none' });
   const [selected, setSelected] = useState<string | null>(null);
   // Picking one end of a new measurement on the map: the sheet steps aside, the next tap on a
   // point fills that end, and the sheet comes back with both ends as they stand.
@@ -333,15 +407,22 @@ function SiteView(props: {
 
   const pickSide = (choice: MirrorChoice, side: 1 | -1) =>
     void action.run(() => api.chooseSide({ pointId: choice.id, side }));
+  /** The suspect search says this point sits on its wrong mirror side: put it on the other. */
+  const flipSide = (pointId: string) => {
+    const p = byId.get(pointId);
+    void action.run(() => api.chooseSide({ pointId, side: p?.side === 1 ? -1 : 1 }));
+  };
 
-  const close = () => setSheet({ kind: 'none' });
+  const close = () => (mirror ? setMirror(null) : setSheet({ kind: 'none' }));
   const backToSheet = (a: string | null, b: string | null) => {
     setPicking(null);
-    setSheet({ kind: 'add-measurement', from: a ?? undefined, to: b ?? undefined });
+    const q = new URLSearchParams({ on: 'map' });
+    if (a) q.set('from', a);
+    if (b) q.set('to', b);
+    navigate(`${base}/measurements/new?${q}`, { sheet: true });
   };
   const pickOnMap = (which: 'a' | 'b', a: string | null, b: string | null) => {
-    setMode('map');
-    setSheet({ kind: 'none' });
+    navigate(`${base}/map`, { replace: true });
     setPicking({ which, a, b });
   };
 
@@ -406,6 +487,9 @@ function SiteView(props: {
             <button className="hud-chip" onClick={() => void downloadDxf(site.site.id).catch((e) => alert(e.message))}>
               ⇩ DXF
             </button>
+            <button className="hud-chip" onClick={() => downloadSurveyJson(site)}>
+              ⇩ JSON
+            </button>
           </div>
           {picking && (
             <div className="tray pick-banner">
@@ -426,7 +510,11 @@ function SiteView(props: {
           )}
           {!picking && site.solve.suspects.length > 0 && (
             <div className="tray suspects-tray">
-              <SuspectsNote site={site} onOpenMeasurement={(id) => setSheet({ kind: 'measurement', id })} />
+              <SuspectsNote
+                site={site}
+                onOpenMeasurement={(id) => setSheet({ kind: 'measurement', id })}
+                onFlipSide={readOnly ? undefined : flipSide}
+              />
             </div>
           )}
           {pendingMirror && (
@@ -468,6 +556,7 @@ function SiteView(props: {
               readOnly={readOnly}
               onAdd={() => setSheet({ kind: 'add-measurement' })}
               onOpenMeasurement={(id) => setSheet({ kind: 'measurement', id })}
+              onFlipSide={flipSide}
               refresh={props.refresh}
             />
           )}
@@ -558,6 +647,7 @@ function SiteView(props: {
       {sheet.kind === 'add-point' && <AddPointSheet site={site} onClose={close} onSaved={props.refresh} />}
       {sheet.kind === 'add-measurement' && (
         <AddMeasurementSheet
+          key={`${sheet.from ?? ''}|${sheet.to ?? ''}`}
           site={site}
           initialA={sheet.from}
           initialB={sheet.to}
@@ -568,6 +658,7 @@ function SiteView(props: {
       )}
       {sheet.kind === 'point' && (
         <PointDetailSheet
+          key={sheet.id}
           site={site}
           pointId={sheet.id}
           readOnly={readOnly}
@@ -578,6 +669,7 @@ function SiteView(props: {
       )}
       {sheet.kind === 'measurement' && (
         <MeasurementSheet
+          key={sheet.id}
           site={site}
           measurementId={sheet.id}
           readOnly={readOnly}
@@ -593,17 +685,36 @@ function SiteView(props: {
           onClose={close}
           onPick={(side) => {
             pickSide(sheet.choice, side);
-            close();
+            setMirror(null);
           }}
         />
       )}
       {sheet.kind === 'constraint' && <ConstraintSheet site={site} onClose={close} onSaved={props.refresh} />}
       {sheet.kind === 'feature' && (
-        <FeatureSheet site={site} existing={sheet.feature} readOnly={readOnly} onClose={close} onSaved={props.refresh} />
+        <FeatureSheet key={sheet.feature?.id ?? 'new'} site={site} existing={sheet.feature} readOnly={readOnly} onClose={close} onSaved={props.refresh} />
       )}
       {sheet.kind === 'plant' && <PlantSheet site={site} onClose={close} onSaved={props.refresh} />}
     </>
   );
+}
+
+/** The sheet a garden URL names: `/points/new`, `/measurements/:id`, `/features/:id`, … */
+function sheetOf(col: string | undefined, item: string | undefined, query: URLSearchParams, site: SitePayload): SheetState {
+  if (!col || !item) return { kind: 'none' };
+  if (col === 'points') return item === 'new' ? { kind: 'add-point' } : { kind: 'point', id: item };
+  if (col === 'measurements') {
+    return item === 'new'
+      ? { kind: 'add-measurement', from: query.get('from') ?? undefined, to: query.get('to') ?? undefined }
+      : { kind: 'measurement', id: item };
+  }
+  if (col === 'features') {
+    if (item === 'new') return { kind: 'feature', feature: null };
+    const f = site.features.find((x) => x.id === item);
+    return f ? { kind: 'feature', feature: f } : { kind: 'none' };
+  }
+  if (col === 'plants' && item === 'new') return { kind: 'plant' };
+  if (col === 'constraints' && item === 'new') return { kind: 'constraint' };
+  return { kind: 'none' };
 }
 
 function PointsTab(props: {
@@ -663,6 +774,7 @@ function MeasureTab(props: {
   readOnly: boolean;
   onAdd: () => void;
   onOpenMeasurement: (id: string) => void;
+  onFlipSide: (pointId: string) => void;
   refresh: () => Promise<void>;
 }) {
   const { site } = props;
@@ -672,7 +784,7 @@ function MeasureTab(props: {
 
   return (
     <>
-      <SuspectsNote site={site} onOpenMeasurement={props.onOpenMeasurement} />
+      <SuspectsNote site={site} onOpenMeasurement={props.onOpenMeasurement} onFlipSide={props.readOnly ? undefined : props.onFlipSide} />
       {action.error && <ErrorNote>{action.error}</ErrorNote>}
       {sorted.map((m) => {
         const r = site.solve.measurementResidualsCm[m.id];
@@ -683,8 +795,7 @@ function MeasureTab(props: {
               {byId.get(m.point_a)?.name} → {byId.get(m.point_b)?.name}
             </span>
             <span className="right">
-              {Math.round(m.distance_m * 100)}
-              {r !== undefined ? ` · ${r.toFixed(1)} cm` : ''}
+              <MeasuredCm distanceM={m.distance_m} residualCm={r} verified={m.verified_at !== null} />
               {!props.readOnly && (
                 <RemoveButton
                   what={`${byId.get(m.point_a)?.name} → ${byId.get(m.point_b)?.name}`}

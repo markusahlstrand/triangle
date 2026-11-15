@@ -36,6 +36,8 @@ export interface SolveMeasurement {
   b: string;
   /** meters */
   d: number;
+  /** Re-measured and confirmed by the owner: weighs more, and is never a suspect. */
+  verified?: boolean;
 }
 
 export type SolveConstraint =
@@ -74,6 +76,8 @@ const EPS = 1e-9;
 
 /** Constraints are assumptions, not measurements — they pull with half the weight. */
 const CONSTRAINT_WEIGHT = 0.5;
+/** A pull the owner re-measured and confirmed pulls this many times harder than an ordinary one. */
+const VERIFIED_WEIGHT = 4;
 
 function dist(p: XY, q: XY): number {
   return Math.hypot(p.x - q.x, p.y - q.y);
@@ -139,10 +143,14 @@ export function solveGarden(
 
   // Average duplicate tape pulls over the same pair (a re-measure refines, not stacks).
   const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+  // A pair with a verified pull is fixed by its verified pulls alone: an unverified pull of
+  // the same pair still reports its own residual, but no longer drags the average.
+  const usable = measurements.filter((m) => byId.has(m.a) && byId.has(m.b) && m.a !== m.b && m.d > 0);
+  const verifiedPairs = new Set(usable.filter((m) => m.verified).map((m) => pairKey(m.a, m.b)));
   const pairDist = new Map<string, number[]>();
-  for (const m of measurements) {
-    if (!byId.has(m.a) || !byId.has(m.b) || m.a === m.b || !(m.d > 0)) continue;
+  for (const m of usable) {
     const key = pairKey(m.a, m.b);
+    if (verifiedPairs.has(key) && !m.verified) continue;
     (pairDist.get(key) ?? pairDist.set(key, []).get(key)!).push(m.d);
   }
   const distOf = (a: string, b: string): number | null => {
@@ -236,7 +244,10 @@ export function solveGarden(
     const [a, b] = key.split('|') as [string, string];
     if (!coords.has(a) || !coords.has(b)) continue;
     const d = ds.reduce((s, v) => s + v, 0) / ds.length;
-    residualFns.push({ fn: () => dist(coords.get(a)!, coords.get(b)!) - d, weight: 1 });
+    residualFns.push({
+      fn: () => dist(coords.get(a)!, coords.get(b)!) - d,
+      weight: verifiedPairs.has(key) ? VERIFIED_WEIGHT : 1,
+    });
     // The FIT uses the pair average, but each tape pull REPORTS against its own
     // number — two disagreeing pulls of the same pair must both show it.
     for (const m of measurements) {
@@ -399,7 +410,8 @@ function solveLinear(A: number[][], n: number): number[] | null {
 // solve without it says what the tape should have read.
 
 export interface Suspect {
-  kind: 'measurement' | 'constraint';
+  /** `side`: a point on the wrong one of its two mirror positions; `id` is the point. */
+  kind: 'measurement' | 'constraint' | 'side';
   id: string;
   /** For a measurement: what the rest of the survey says the distance is, meters. */
   expected: number | null;
@@ -449,7 +461,7 @@ export function findSuspects(
   };
 
   for (const m of measurements) {
-    if (!base.measurementResiduals.has(m.id)) continue;
+    if (m.verified || !base.measurementResiduals.has(m.id)) continue;
     const without = solveGarden(points, measurements.filter((x) => x.id !== m.id), constraints);
     const a = without.coords.get(m.a);
     const b = without.coords.get(m.b);
@@ -463,6 +475,17 @@ export function findSuspects(
     const without = solveGarden(points, measurements, others);
     // How badly the tape alone breaks this assumption, once nothing enforces it.
     consider('constraint', c.id, without, residualOf(c, without.coords) ?? 0, null);
+  }
+  // A point fixed by exactly two distances sits where its chosen side put it. Every pull
+  // around it can be right and still disagree, if the side is the wrong one: flip it and see.
+  for (const p of points) {
+    if (p.side === null || p.locked || !base.coords.has(p.id)) continue;
+    const flipped = points.map((q) => (q.id === p.id ? { ...q, side: (p.side === 1 ? -1 : 1) as -1 | 1 } : q));
+    const without = solveGarden(flipped, measurements, constraints);
+    const from = base.coords.get(p.id)!;
+    const to = without.coords.get(p.id);
+    if (!to) continue;
+    consider('side', p.id, without, dist(from, to), null);
   }
   return out.sort((x, y) => y.explains - x.explains).slice(0, limit);
 }

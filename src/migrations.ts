@@ -114,4 +114,12 @@ export const gardenMigrations: SqlMigration[] = [
       CREATE INDEX garden_plants_site ON garden_plants(site_id);
     `,
   },
+  {
+    version: '0002-measurement-verified',
+    sql: `
+    -- When the owner confirmed this tape pull by re-measuring it (ISO-8601), or NULL.
+    -- A verified pull is never accused by the suspect search and weighs more in the adjustment.
+    ALTER TABLE garden_measurements ADD COLUMN verified_at TEXT;
+  `,
+  },
 ];
