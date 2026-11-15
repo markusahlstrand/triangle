@@ -88,6 +88,7 @@ export function GardenMap(props: {
   selected: string | null;
   pendingMirror: MirrorChoice | null;
   onSelectPoint: (id: string) => void;
+  onSelectMeasurement: (id: string) => void;
   onPickSide: (choice: MirrorChoice, side: 1 | -1) => void;
   onTrayPoint: (id: string) => void;
 }) {
@@ -116,6 +117,9 @@ export function GardenMap(props: {
   const vb = view ?? fit;
   const drag = useRef<{ px: number; py: number; vb: typeof vb } | null>(null);
   const pinch = useRef<Map<number, { x: number; y: number }>>(new Map());
+  // A pan that starts on a point or a tape line must not also open it: past a few pixels
+  // of movement the gesture is a drag, and the click that ends it is swallowed.
+  const dragged = useRef(false);
 
   const clientToUser = (cx: number, cy: number) => {
     const rect = svgRef.current!.getBoundingClientRect();
@@ -131,6 +135,7 @@ export function GardenMap(props: {
     (e.target as Element).setPointerCapture?.(e.pointerId);
     pinch.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     drag.current = { px: e.clientX, py: e.clientY, vb };
+    dragged.current = false;
   };
   const onPointerMove = (e: React.PointerEvent) => {
     if (!pinch.current.has(e.pointerId)) return;
@@ -138,6 +143,7 @@ export function GardenMap(props: {
     if (pinch.current.size === 1 && drag.current) {
       const rect = svgRef.current!.getBoundingClientRect();
       const scale = Math.max(vb.w / rect.width, vb.h / rect.height);
+      if (Math.hypot(e.clientX - drag.current.px, e.clientY - drag.current.py) > 6) dragged.current = true;
       const dx = (e.clientX - drag.current.px) * scale;
       const dy = (e.clientY - drag.current.py) * scale;
       setView({ ...drag.current.vb, x: drag.current.vb.x - dx, y: drag.current.vb.y - dy });
@@ -171,6 +177,9 @@ export function GardenMap(props: {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onClickCapture={(e) => {
+          if (dragged.current) e.stopPropagation();
+        }}
         onWheel={onWheel}
       >
         {/* 1 m grid */}
@@ -233,7 +242,16 @@ export function GardenMap(props: {
             const b = byId.get(m.point_b);
             if (!a || !b || a.x === null || b.x === null) return null;
             return (
-              <g key={m.id}>
+              <g
+                key={m.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  props.onSelectMeasurement(m.id);
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                {/* A wide invisible stroke: the drawn line is far too thin to hit with a finger. */}
+                <line x1={a.x} y1={-a.y!} x2={b.x} y2={-b.y!} stroke="transparent" strokeWidth={dot * 2} />
                 <line
                   x1={a.x}
                   y1={-a.y!}

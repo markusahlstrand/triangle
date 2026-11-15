@@ -20,6 +20,7 @@ import {
   AddPointSheet,
   ConstraintSheet,
   FeatureSheet,
+  MeasurementSheet,
   MirrorSheet,
   PlantSheet,
   ErrorNote,
@@ -46,6 +47,7 @@ type SheetState =
   | { kind: 'add-point' }
   | { kind: 'add-measurement'; from?: string }
   | { kind: 'point'; id: string }
+  | { kind: 'measurement'; id: string }
   | { kind: 'mirror'; choice: MirrorChoice }
   | { kind: 'constraint' }
   | { kind: 'feature'; feature: Feature | null }
@@ -365,6 +367,7 @@ function SiteView(props: {
               setSelected(id);
               setSheet({ kind: 'point', id });
             }}
+            onSelectMeasurement={(id) => setSheet({ kind: 'measurement', id })}
             onPickSide={pickSide}
             onTrayPoint={(id) => setSheet({ kind: 'point', id })}
           />
@@ -519,6 +522,16 @@ function SiteView(props: {
           onClose={close}
           onChanged={props.refresh}
           onAddMeasurementFrom={(id) => setSheet({ kind: 'add-measurement', from: id })}
+        />
+      )}
+      {sheet.kind === 'measurement' && (
+        <MeasurementSheet
+          site={site}
+          measurementId={sheet.id}
+          readOnly={readOnly}
+          onClose={close}
+          onChanged={props.refresh}
+          onOpenPoint={(id) => setSheet({ kind: 'point', id })}
         />
       )}
       {sheet.kind === 'mirror' && (

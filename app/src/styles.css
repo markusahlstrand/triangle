@@ -452,3 +452,10 @@ wa-tab-group.tabs wa-tab-panel {
   overflow-wrap: anywhere;
   font-size: 12px;
 }
+
+/* ── Point picker ── */
+.point-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
