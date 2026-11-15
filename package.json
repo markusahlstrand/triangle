@@ -32,6 +32,7 @@
         ]
       }
     },
+    "usesModels": true,
     "tenant": "t-5ra4yxscep",
     "slug": "triangle",
     "client": {

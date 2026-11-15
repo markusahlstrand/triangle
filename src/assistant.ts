@@ -23,7 +23,8 @@ import type { SitePayload } from './module.js';
 /** Preferred first. The first the platform holds a credential for answers. */
 export const ASSISTANT_MODELS = [
   'anthropic:claude-sonnet-5',
-  // Workers AI, bound as `env.AI` on every pushed vertical: always there when deployed.
+  // Workers AI: the platform binds `env.AI` only because package.json declares
+  // `substrat.usesModels` — without it a pushed worker has no model at all.
   'cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast',
 ] as const;
 
