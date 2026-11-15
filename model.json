@@ -61,7 +61,12 @@
               "house",
               "fence",
               "bed",
-              "path"
+              "path",
+              "table",
+              "chair",
+              "bench",
+              "lounger",
+              "parasol"
             ]
           },
           "name": {

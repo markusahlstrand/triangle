@@ -296,7 +296,7 @@ a point with exactly two distances has two mirror candidates and waits for a
 parallel, equal-length, colinear) are assumptions with their own residuals — they
 enter the adjustment at HALF the weight of tape measurements, so the app never
 quietly bends real numbers to fit one; preview before apply (`garden/preview-constraint`).
-**Features** (retention-wall, pool, terrace, stairs, house, fence, bed, path) are
+**Features** (retention-wall, pool, terrace, stairs, house, fence, bed, path; furniture: table, chair, bench, lounger, parasol) are
 ordered point-runs, per-segment straight/curved; they never store coordinates.
 **Plants** sit at points with species from `garden_species` (mature canopy drawn on
 the map and in DXF). **DXF export** (`src/dxf.ts`, pure) is ASCII R12; point Z =
