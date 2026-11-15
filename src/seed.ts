@@ -11,7 +11,7 @@ import {
 } from '@substrat-run/contracts';
 import { ulid } from '@substrat-run/kernel';
 import { SqliteScopeHost } from '@substrat-run/adapter-sqlite';
-import { ENTITLEMENT_KEYS, MODULES, OWNER_ROLE_KEY, ROLES } from './provision.js';
+import { ENTITLEMENT_KEYS, MODULES, OWNER_ROLE_KEY, permissions, ROLES } from './provision.js';
 
 // The provisioning surface (modules, roles, grant shapes) lives in
 // provision.ts — node-free so the worker bundles it and `substrat push` reads
@@ -39,7 +39,8 @@ export interface TriangleWorld {
 }
 
 export function buildTriangleHost(dir: string): SqliteScopeHost {
-  const host = new SqliteScopeHost({ dir });
+  // `permissions` is the declared surface: a module it leaves out is refused at registration.
+  const host = new SqliteScopeHost({ dir, permissions });
   for (const m of MODULES) host.registerModule(m);
   return host;
 }

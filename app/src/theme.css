@@ -1,0 +1,65 @@
+/*
+ * Triangle's Web Awesome theme — the design handover's tokens (styles.css :root) handed to
+ * Web Awesome and @substrat-run/elements. Token values only, no selectors into components,
+ * in Web Awesome's last layer: it wins over the default theme and still loses to the app's
+ * own unlayered CSS. Light only — the handover has no dark mode.
+ *
+ * The look: square corners, flat surfaces with a hairline border instead of shadows, warm
+ * paper neutrals, one violet accent (hue 295), Public Sans with Roboto Mono for figures.
+ */
+@layer wa-theme-overrides {
+  .triangle-theme {
+    /* Violet brand scale around --accent, oklch(0.55 0.14 295). */
+    --wa-color-brand-95: oklch(96.5% 0.018 295);
+    --wa-color-brand-90: oklch(93% 0.035 295);
+    --wa-color-brand-80: oklch(86% 0.065 295);
+    --wa-color-brand-70: oklch(77% 0.1 295);
+    --wa-color-brand-60: oklch(66% 0.125 295);
+    --wa-color-brand-50: oklch(55% 0.14 295);
+    --wa-color-brand-40: oklch(45% 0.15 295);
+    --wa-color-brand-30: oklch(38% 0.12 295);
+    --wa-color-brand-20: oklch(30% 0.09 295);
+    --wa-color-brand-10: oklch(22% 0.06 295);
+    --wa-color-brand-05: oklch(16% 0.04 295);
+    --wa-color-brand: var(--wa-color-brand-50);
+    --wa-color-brand-on: white;
+
+    /* Warm paper neutrals: #efece5 / #ddd7c9 / #5d5a63 / #17161a. */
+    --wa-color-neutral-95: oklch(95% 0.008 85);
+    --wa-color-neutral-90: oklch(89% 0.016 85);
+    --wa-color-neutral-80: oklch(81% 0.02 85);
+    --wa-color-neutral-70: oklch(70% 0.015 290);
+    --wa-color-neutral-60: oklch(60% 0.012 290);
+    --wa-color-neutral-50: oklch(48% 0.012 290);
+    --wa-color-neutral-40: oklch(40% 0.014 290);
+    --wa-color-neutral-30: oklch(33% 0.014 290);
+    --wa-color-neutral-20: oklch(26% 0.01 290);
+    --wa-color-neutral-10: oklch(20% 0.008 290);
+    --wa-color-neutral-05: oklch(16% 0.006 290);
+    --wa-color-neutral: var(--wa-color-neutral-50);
+
+    /* Surfaces and text, pointed at the handover's own tokens. */
+    --wa-color-surface-default: var(--card);
+    --wa-color-surface-raised: var(--white);
+    --wa-color-surface-lowered: var(--bg);
+    --wa-color-surface-border: var(--border);
+    --wa-color-text-normal: var(--ink);
+    --wa-color-text-quiet: var(--muted);
+    --wa-color-text-link: var(--accent-dark);
+    --wa-color-focus: var(--accent);
+    --wa-form-control-background-color: var(--white);
+    --wa-form-control-border-color: var(--border);
+    --wa-form-control-label-color: var(--muted);
+
+    --wa-font-family-body: var(--sans);
+    --wa-font-family-heading: var(--sans);
+    --wa-font-family-code: var(--mono);
+    --wa-font-family-longform: var(--sans);
+
+    /* Square and flat. */
+    --wa-border-radius-scale: 0;
+    --wa-panel-border-radius: 0;
+    --wa-shadow-offset-y-scale: 0;
+    --wa-shadow-blur-scale: 0;
+  }
+}

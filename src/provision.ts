@@ -6,6 +6,11 @@ import {
 import { gardenModule } from './module.js';
 import { GARDEN_PERM } from './manifest.js';
 
+// The manifest's config surface rides the same import `substrat push` already makes
+// for `permissions`: this export is what the push uploads, so `src/manifest.ts` is the
+// single envSpec declaration.
+export { TRIANGLE_ENV as envSpec } from './manifest.js';
+
 // ============================================================================
 // The vertical's PROVISIONING surface — everything a deployment needs to know
 // about modules, roles and grant shapes, with NO node imports. Split from

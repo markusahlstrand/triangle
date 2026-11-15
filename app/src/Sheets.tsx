@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
+import type { Column } from '@substrat-run/elements/entity-table';
+import type { TableSource } from '@substrat-run/elements/entity-table-model';
 import {
   api,
   ApiError,
@@ -19,21 +21,68 @@ import { pointResidualCm } from './Map';
 // site back up.
 // ============================================================================
 
-export function Sheet(props: { title: string; onClose: () => void; children: React.ReactNode }) {
+/**
+ * A sheet is a Web Awesome dialog dressed as the handover's bottom sheet (styles.css):
+ * focus is trapped inside it, Escape and the backdrop close it, and the header's close
+ * button is the dialog's own. It is mounted open; closing it — by any of those — reports
+ * through `onClose`, and the caller unmounts it.
+ */
+export function Sheet(props: { title: string; onClose: () => void; children: ReactNode }) {
   return (
-    <div className="sheet-backdrop" onClick={props.onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="sheet-head">
-          <div className="t">{props.title}</div>
-          <button className="x" onClick={props.onClose}>
-            ✕
-          </button>
-        </div>
-        <div className="sheet-body">{props.children}</div>
-      </div>
-    </div>
+    <wa-dialog
+      class="sheet"
+      label={props.title}
+      open
+      light-dismiss
+      // Only the dialog's own hide: a select or dropdown inside it fires the same event.
+      onwa-after-hide={(e: Event) => {
+        if (e.target === e.currentTarget) props.onClose();
+      }}
+    >
+      <div className="sheet-body">{props.children}</div>
+    </wa-dialog>
   );
 }
+
+/** A failure, said where the action was. */
+export function ErrorNote(props: { children: ReactNode }) {
+  return (
+    <wa-callout variant="danger" size="small">
+      {props.children}
+    </wa-callout>
+  );
+}
+
+/** What just happened, when it went well. */
+export function OkNote(props: { children: ReactNode }) {
+  return (
+    <wa-callout variant="success" size="small">
+      {props.children}
+    </wa-callout>
+  );
+}
+
+/** The handover's guidance callout, with the Triangle mark as its icon. */
+export function Guide(props: { children: ReactNode }) {
+  return (
+    <wa-callout variant="brand" size="small">
+      <div slot="icon" className="tri" />
+      {props.children}
+    </wa-callout>
+  );
+}
+
+/** A small "remove this" control for a row. */
+export function RemoveButton(props: { what: string; onClick: () => void; disabled?: boolean }) {
+  return (
+    <wa-button size="small" appearance="plain" variant="danger" disabled={props.disabled} onClick={props.onClick}>
+      ✕<span className="wa-visually-hidden"> Remove {props.what}</span>
+    </wa-button>
+  );
+}
+
+/** The value a text control holds — React hands us its host element. */
+export const valueOf = (e: Event): string => (e.target as HTMLInputElement).value;
 
 export function useAction(onDone: () => Promise<void> | void) {
   const [error, setError] = useState<string | null>(null);
@@ -151,15 +200,15 @@ export function AddMeasurementSheet(props: {
 
   return (
     <Sheet title="New measurement" onClose={props.onClose}>
-      {result && <div className="ok-bar">{result}</div>}
-      {action.error && <div className="error-bar">{action.error}</div>}
+      {result && <OkNote>{result}</OkNote>}
+      {action.error && <ErrorNote>{action.error}</ErrorNote>}
       <div className="field">
         <div className="section-label">From {a ? `· ${byId.get(a)?.name}` : '· pick a point'}</div>
         {!a && <PointPicker site={props.site} selected={a} onPick={setA} />}
         {a && (
-          <button className="hint" style={{ textAlign: 'left' }} onClick={() => setA(null)}>
+          <wa-button class="change" size="small" appearance="plain" onClick={() => setA(null)}>
             change
-          </button>
+          </wa-button>
         )}
       </div>
       {a && (
@@ -167,9 +216,9 @@ export function AddMeasurementSheet(props: {
           <div className="section-label">To {b ? `· ${byId.get(b)?.name}` : '· pick a point'}</div>
           {!b && <PointPicker site={props.site} exclude={[a]} selected={b} onPick={setB} />}
           {b && (
-            <button className="hint" style={{ textAlign: 'left' }} onClick={() => setB(null)}>
+            <wa-button class="change" size="small" appearance="plain" onClick={() => setB(null)}>
               change
-            </button>
+            </wa-button>
           )}
         </div>
       )}
@@ -191,13 +240,13 @@ export function AddMeasurementSheet(props: {
               </button>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn secondary" disabled={!cm || action.busy} onClick={() => save(true)}>
+          <div className="actions">
+            <wa-button size="large" appearance="outlined" disabled={!cm || action.busy} onClick={() => save(true)}>
               Save &amp; next
-            </button>
-            <button className="btn" disabled={!cm || action.busy} onClick={() => save(false)}>
+            </wa-button>
+            <wa-button size="large" variant="brand" disabled={!cm || action.busy} loading={action.busy} onClick={() => save(false)}>
               Save
-            </button>
+            </wa-button>
           </div>
         </>
       )}
@@ -220,27 +269,34 @@ export function AddPointSheet(props: {
 
   return (
     <Sheet title={first ? 'First point — the origin' : second ? 'Second point — the baseline' : 'New point'} onClose={props.onClose}>
-      {action.error && <div className="error-bar">{action.error}</div>}
+      {action.error && <ErrorNote>{action.error}</ErrorNote>}
       {(first || second) && (
-        <div className="callout">
-          <div className="tri" />
-          <div>
-            {first
-              ? 'Stand at a corner you will always be able to find. This becomes the origin of the map.'
-              : 'The line from the origin to this point sets the orientation of the whole map — pick a long, straight, permanent edge, then tape the distance between the two.'}
-          </div>
-        </div>
+        <Guide>
+          {first
+            ? 'Stand at a corner you will always be able to find. This becomes the origin of the map.'
+            : 'The line from the origin to this point sets the orientation of the whole map — pick a long, straight, permanent edge, then tape the distance between the two.'}
+        </Guide>
       )}
-      <div className="field">
-        <div className="section-label">Point name</div>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="house SW corner" autoFocus />
-      </div>
-      <div className="field">
-        <div className="section-label">Elevation (m, vs datum — optional)</div>
-        <input value={elev} onChange={(e) => setElev(e.target.value)} placeholder="+0.00" inputMode="decimal" />
-      </div>
-      <button
-        className="btn"
+      <wa-input
+        label="Point name"
+        size="large"
+        value={name}
+        onInput={(e) => setName(valueOf(e))}
+        placeholder="house SW corner"
+        autofocus
+      />
+      <wa-input
+        label="Elevation (m, vs datum — optional)"
+        size="large"
+        value={elev}
+        onInput={(e) => setElev(valueOf(e))}
+        placeholder="+0.00"
+        inputmode="decimal"
+      />
+      <wa-button
+        size="large"
+        variant="brand"
+        loading={action.busy}
         disabled={!name.trim() || action.busy}
         onClick={() =>
           void action.run(async () => {
@@ -254,7 +310,7 @@ export function AddPointSheet(props: {
         }
       >
         Add point
-      </button>
+      </wa-button>
     </Sheet>
   );
 }
@@ -281,7 +337,7 @@ export function PointDetailSheet(props: {
 
   return (
     <Sheet title={p.name} onClose={props.onClose}>
-      {action.error && <div className="error-bar">{action.error}</div>}
+      {action.error && <ErrorNote>{action.error}</ErrorNote>}
       <div className="meta">
         {p.status} · {measurements.length} distances
         {residual !== undefined ? ` · worst residual ${residual.toFixed(1)} cm` : ''}
@@ -302,12 +358,11 @@ export function PointDetailSheet(props: {
               <span className="right">
                 {Math.round(m.distance_m * 100)} cm{r !== undefined ? ` · ${r.toFixed(1)}` : ''}
                 {!props.readOnly && (
-                  <button
-                    style={{ marginLeft: 10, color: 'var(--bad)' }}
+                  <RemoveButton
+                    what={`tape pull to ${other?.name ?? 'point'}`}
+                    disabled={action.busy}
                     onClick={() => void action.run(() => api.deleteMeasurement({ measurementId: m.id }))}
-                  >
-                    ✕
-                  </button>
+                  />
                 )}
               </span>
             </div>
@@ -317,17 +372,22 @@ export function PointDetailSheet(props: {
       </div>
       {!props.readOnly && (
         <>
-          <button className="btn secondary" onClick={() => props.onAddMeasurementFrom(p.id)}>
+          <wa-button size="large" appearance="outlined" onClick={() => props.onAddMeasurementFrom(p.id)}>
             + Measurement from here
-          </button>
-          <div className="field">
-            <div className="section-label">Elevation (m)</div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input value={elev} onChange={(e) => setElev(e.target.value)} inputMode="decimal" placeholder="—" />
-              <button
-                className="btn secondary"
-                style={{ flex: 'none', width: 90 }}
-                disabled={action.busy || (elev.trim() !== '' && Number.isNaN(Number(elev)))}
+          </wa-button>
+          <div className="inline-field">
+            <wa-input
+              label="Elevation (m)"
+              size="large"
+              value={elev}
+              onInput={(e) => setElev(valueOf(e))}
+              inputmode="decimal"
+              placeholder="—"
+            />
+            <wa-button
+              size="large"
+              appearance="outlined"
+              disabled={action.busy || (elev.trim() !== '' && Number.isNaN(Number(elev)))}
                 onClick={() =>
                   void action.run(() =>
                     api.updatePoint({
@@ -336,20 +396,22 @@ export function PointDetailSheet(props: {
                     }),
                   )
                 }
-              >
-                Set
-              </button>
-            </div>
+            >
+              Set
+            </wa-button>
           </div>
-          <button
-            className="btn secondary"
+          <wa-switch
+            checked={p.locked === 1}
             disabled={action.busy}
-            onClick={() => void action.run(() => api.updatePoint({ pointId: p.id, locked: p.locked !== 1 }))}
+            hint="A locked point keeps its position when the survey re-solves."
+            onChange={() => void action.run(() => api.updatePoint({ pointId: p.id, locked: p.locked !== 1 }))}
           >
-            {p.locked === 1 ? 'Unlock position' : 'Lock position'}
-          </button>
-          <button
-            className="btn danger"
+            Lock position
+          </wa-switch>
+          <wa-button
+            size="large"
+            variant="danger"
+            appearance="outlined"
             disabled={action.busy}
             onClick={() =>
               void action.run(async () => {
@@ -359,9 +421,10 @@ export function PointDetailSheet(props: {
             }
           >
             Delete point
-          </button>
+          </wa-button>
         </>
       )}
+      <History entityType="point" entityId={p.id} />
     </Sheet>
   );
 }
@@ -399,9 +462,9 @@ export function ConstraintSheet(props: {
 
   return (
     <Sheet title="New constraint" onClose={props.onClose}>
-      {action.error && <div className="error-bar">{action.error}</div>}
+      {action.error && <ErrorNote>{action.error}</ErrorNote>}
       {!kind && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div className="stack">
           {CONSTRAINT_KINDS.map((k) => (
             <button key={k.kind} className="pill" onClick={() => setKind(k)}>
               {k.label}
@@ -424,35 +487,34 @@ export function ConstraintSheet(props: {
             selected={null}
             onPick={(id) => setPicked((v) => [...v, id])}
           />
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn secondary" onClick={() => setPicked([])}>
+          <div className="actions">
+            <wa-button size="large" appearance="outlined" onClick={() => setPicked([])}>
               Clear
-            </button>
-            <button className="btn" disabled={!enough || action.busy} onClick={doPreview}>
+            </wa-button>
+            <wa-button size="large" variant="brand" disabled={!enough || action.busy} loading={action.busy} onClick={doPreview}>
               Preview
-            </button>
+            </wa-button>
           </div>
         </>
       )}
       {kind && preview && (
         <>
-          <div className="callout">
-            <div className="tri" />
-            <div>
-              {preview.moved.length === 0
-                ? 'Applying this moves nothing — the survey already agrees with it.'
-                : `Applying this moves ${preview.moved
-                    .map((m) => `${byId.get(m.pointId)?.name} by ${m.deltaCm.toFixed(1)} cm`)
-                    .join(', ')}.`}{' '}
-              The preview tells you whether you are correcting the survey or lying to it.
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn secondary" onClick={() => setPreview(null)}>
+          <Guide>
+            {preview.moved.length === 0
+              ? 'Applying this moves nothing — the survey already agrees with it.'
+              : `Applying this moves ${preview.moved
+                  .map((m) => `${byId.get(m.pointId)?.name} by ${m.deltaCm.toFixed(1)} cm`)
+                  .join(', ')}.`}{' '}
+            The preview tells you whether you are correcting the survey or lying to it.
+          </Guide>
+          <div className="actions">
+            <wa-button size="large" appearance="outlined" onClick={() => setPreview(null)}>
               Back
-            </button>
-            <button
-              className="btn"
+            </wa-button>
+            <wa-button
+              size="large"
+              variant="brand"
+              loading={action.busy}
               disabled={action.busy}
               onClick={() =>
                 void action.run(async () => {
@@ -466,7 +528,7 @@ export function ConstraintSheet(props: {
               }
             >
               Apply constraint
-            </button>
+            </wa-button>
           </div>
         </>
       )}
@@ -506,26 +568,36 @@ export function FeatureSheet(props: {
 
   return (
     <Sheet title={f ? f.name : 'New feature'} onClose={props.onClose}>
-      {action.error && <div className="error-bar">{action.error}</div>}
+      {action.error && <ErrorNote>{action.error}</ErrorNote>}
       {!props.readOnly && (
         <>
-          <div className="field">
-            <div className="section-label">Type</div>
-            <select value={type} onChange={(e) => setType(e.target.value as Feature['type'])} disabled={f !== null}>
-              {FEATURE_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <div className="section-label">Name</div>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="lower retention wall" />
-          </div>
-          <button className="pill" onClick={() => setClosed(!closed)}>
-            {closed ? '▣ Closed loop' : '▢ Open run'}
-          </button>
+          <wa-select
+            label="Type"
+            size="large"
+            value={type}
+            onChange={(e) => setType(valueOf(e) as Feature['type'])}
+            disabled={f !== null}
+          >
+            {FEATURE_TYPES.map((t) => (
+              <wa-option key={t} value={t}>
+                {t}
+              </wa-option>
+            ))}
+          </wa-select>
+          <wa-input
+            label="Name"
+            size="large"
+            value={name}
+            onInput={(e) => setName(valueOf(e))}
+            placeholder="lower retention wall"
+          />
+          <wa-switch
+            checked={closed}
+            hint="A closed run joins its last point back to its first."
+            onChange={(e) => setClosed((e.target as HTMLInputElement).checked)}
+          >
+            Closed loop
+          </wa-switch>
         </>
       )}
       <div>
@@ -538,20 +610,23 @@ export function FeatureSheet(props: {
               {i + 1}. {byId.get(v.pointId)?.name}
             </span>
             {!props.readOnly && i < vertices.length - (closed ? 0 : 1) && (
-              <button
-                className="right"
-                style={{ color: 'var(--accent)' }}
+              <wa-button
+                class="right"
+                size="small"
+                appearance="plain"
+                variant="brand"
                 onClick={() =>
                   setVertices((vs) => vs.map((x, j) => (j === i ? { ...x, curvedToNext: !x.curvedToNext } : x)))
                 }
               >
                 {v.curvedToNext ? '⌒ curved' : '— straight'}
-              </button>
+              </wa-button>
             )}
             {!props.readOnly && (
-              <button style={{ color: 'var(--bad)' }} onClick={() => setVertices((vs) => vs.filter((_, j) => j !== i))}>
-                ✕
-              </button>
+              <RemoveButton
+                what={byId.get(v.pointId)?.name ?? 'point'}
+                onClick={() => setVertices((vs) => vs.filter((_, j) => j !== i))}
+              />
             )}
           </div>
         ))}
@@ -567,8 +642,10 @@ export function FeatureSheet(props: {
               onPick={(id) => setVertices((vs) => [...vs, { pointId: id, curvedToNext: false }])}
             />
           </div>
-          <button
-            className="btn"
+          <wa-button
+            size="large"
+            variant="brand"
+            loading={action.busy}
             disabled={vertices.length < 2 || !name.trim() || action.busy}
             onClick={() =>
               void action.run(async () => {
@@ -588,10 +665,12 @@ export function FeatureSheet(props: {
             }
           >
             {f ? 'Save feature' : 'Add feature'}
-          </button>
+          </wa-button>
           {f && (
-            <button
-              className="btn danger"
+            <wa-button
+              size="large"
+              variant="danger"
+              appearance="outlined"
               disabled={action.busy}
               onClick={() =>
                 void action.run(async () => {
@@ -601,10 +680,11 @@ export function FeatureSheet(props: {
               }
             >
               Delete feature
-            </button>
+            </wa-button>
           )}
         </>
       )}
+      {f && <History entityType="feature" entityId={f.id} />}
     </Sheet>
   );
 }
@@ -616,31 +696,15 @@ export function PlantSheet(props: {
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
-  const [species, setSpecies] = useState<Species[] | null>(null);
   const [picked, setPicked] = useState<Species | null>(null);
   const [pointId, setPointId] = useState<string | null>(null);
   const [label, setLabel] = useState('');
   const action = useAction(props.onSaved);
 
-  if (species === null) {
-    void api.listSpecies().then((page) => setSpecies(page.entries));
-  }
-
   return (
     <Sheet title={picked ? `Place ${picked.common_name}` : 'Plant library'} onClose={props.onClose}>
-      {action.error && <div className="error-bar">{action.error}</div>}
-      {!picked &&
-        (species ?? []).map((s) => (
-          <button key={s.id} className="pill" onClick={() => setPicked(s)}>
-            <span>
-              {s.common_name}
-              <div className="hint" style={{ fontStyle: 'italic' }}>{s.latin_name}</div>
-            </span>
-            <span className="elev">
-              {s.category} · ⌀{s.mature_canopy_m ?? '?'} m
-            </span>
-          </button>
-        ))}
+      {action.error && <ErrorNote>{action.error}</ErrorNote>}
+      {!picked && <SpeciesTable onPick={setPicked} />}
       {picked && (
         <>
           <div className="hint">
@@ -648,16 +712,25 @@ export function PlantSheet(props: {
             {picked.years_to_mature ? ` in ~${picked.years_to_mature} years` : ''}. The map draws the
             mature canopy so spacing mistakes show now, not in ten years.
           </div>
-          <div className="field">
-            <div className="section-label">Label (optional)</div>
-            <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={picked.common_name} />
-          </div>
+          <wa-input
+            label="Label (optional)"
+            size="large"
+            value={label}
+            onInput={(e) => setLabel(valueOf(e))}
+            placeholder={picked.common_name}
+          />
           <div className="field">
             <div className="section-label">At point</div>
             <PointPicker site={props.site} selected={pointId} onPick={setPointId} />
           </div>
-          <button
-            className="btn"
+          <div className="actions">
+            <wa-button size="large" appearance="outlined" onClick={() => setPicked(null)}>
+              Back
+            </wa-button>
+          <wa-button
+            size="large"
+            variant="brand"
+            loading={action.busy}
             disabled={!pointId || action.busy}
             onClick={() =>
               void action.run(async () => {
@@ -672,10 +745,109 @@ export function PlantSheet(props: {
             }
           >
             Plant it
-          </button>
+          </wa-button>
+          </div>
         </>
       )}
     </Sheet>
+  );
+}
+
+// ── The species library: one paged read, as <sub-entity-table> ───────────────
+
+const SPECIES_COLUMNS: Column<Species, 'common_name' | 'created_at'>[] = [
+  { key: 'common_name', label: 'Species', sort: 'common_name' },
+  { key: 'latin_name', label: 'Latin', priority: 3 },
+  {
+    key: 'category',
+    label: 'Kind',
+    kind: 'badge',
+    tones: { tree: 'success', shrub: 'success', hedge: 'success', perennial: 'warning', climber: 'brand' },
+    priority: 2,
+  },
+  {
+    key: 'mature_canopy_m',
+    label: '⌀ canopy',
+    align: 'end',
+    value: (s) => (s.mature_canopy_m === null ? '—' : `${s.mature_canopy_m} m`),
+  },
+];
+
+/** The library's read, walked a page at a time and sorted on the server. */
+const speciesSource: TableSource<Species, 'common_name' | 'created_at'> = {
+  read: ({ sort, order, limit }) =>
+    api.listSpecies({ ...(sort ? { sort } : {}), order, ...(limit ? { limit } : {}) }),
+  follow: (next) => api.follow<Species>(next),
+};
+
+/** Pick a species: tap a row. Sorting and paging are the table's; the read is `garden/list-species`. */
+function SpeciesTable(props: { onPick: (s: Species) => void }) {
+  return (
+    <sub-entity-table
+      label="Species library"
+      density="compact"
+      paging="more"
+      page-size="20"
+      row-click
+      empty="The library is empty."
+      source={speciesSource}
+      columns={SPECIES_COLUMNS}
+      onsub-row-click={(e: CustomEvent<{ row: Species }>) => props.onPick(e.detail.row)}
+    />
+  );
+}
+
+// ── History: an entity's events off the audit spine (`garden/timeline`) ──────
+
+type HistoryEntry = Awaited<ReturnType<typeof api.timeline>>['entries'][number];
+
+const HISTORY_COLUMNS: Column<HistoryEntry>[] = [
+  { key: 'occurredAt', label: 'When', kind: 'relative' },
+  {
+    key: 'type',
+    label: 'What',
+    value: (e) => e.type.replace(/^garden\./, '').replace(/-/g, ' '),
+  },
+  {
+    key: 'actor',
+    label: 'By',
+    priority: 2,
+    value: (e) => (typeof e.actor === 'string' ? e.actor.slice(-6) : 'system'),
+    kind: 'code',
+  },
+];
+
+/**
+ * Why did the pool move 12 cm last Tuesday: the entity's own events, newest first. A
+ * viewer may read it too (`garden:read`); a 403 shows as the table's wall, not an empty list.
+ */
+export function History(props: { entityType: 'point' | 'feature' | 'site'; entityId: string }) {
+  const source = useMemo<TableSource<HistoryEntry>>(
+    () => ({
+      read: ({ limit }) =>
+        api.timeline({
+          entityType: props.entityType,
+          entityId: props.entityId,
+          order: 'desc',
+          ...(limit ? { limit } : {}),
+        }),
+      follow: (next) => api.follow<HistoryEntry>(next),
+    }),
+    [props.entityType, props.entityId],
+  );
+  return (
+    <details className="history">
+      <summary className="section-label">History</summary>
+      <sub-entity-table
+        label="History"
+        density="compact"
+        paging="more"
+        page-size="10"
+        empty="Nothing recorded yet."
+        source={source}
+        columns={HISTORY_COLUMNS}
+      />
+    </details>
   );
 }
 
@@ -708,9 +880,9 @@ export function MirrorSheet(props: {
           </button>
         );
       })}
-      <button className="btn secondary" onClick={props.onClose}>
+      <wa-button size="large" appearance="outlined" onClick={props.onClose}>
         Ask again later
-      </button>
+      </wa-button>
     </Sheet>
   );
 }

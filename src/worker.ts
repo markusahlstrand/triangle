@@ -14,12 +14,17 @@
  * This vertical is a pure OIDC RELYING PARTY: it runs no credential store and
  * hosts no sign-up. The issuer is chosen at app creation (the dashboard's
  * Identity section) and delivered per scope as the `substrat:auth` config entry
- * via /internal/configure; `authProviderFor` builds the full RP (browser login
+ * via /internal/configure; `instanceAuthFor` builds the full RP (browser login
  * at the issuer, cookie sessions signed with the tenant's DO-minted secret,
  * bearer fallback for API clients) from that delivery. The tenant's `AUTH`
  * IdentityDO maps a verified subject → PrincipalId (claiming the owner seat on
- * first login) and holds invites. The `x-principal` dev header remains ONLY
- * behind ALLOW_DEV_HEADER for local `wrangler dev` — never set in prod.
+ * first login) and holds invites.
+ *
+ * There is ONE way in, in every environment: a verified login. The worker no
+ * longer honours an `x-principal` header at all — a header naming the caller is
+ * an impersonation bypass one variable away from being live. `ALLOW_DEV_NODE`
+ * (local `wrangler dev` only, never set in prod) supplies an ADDRESS — which
+ * instance an un-routed request belongs to — and authenticates nobody.
  */
 import { Hono } from 'hono';
 import type { Context } from 'hono';
@@ -28,7 +33,6 @@ import {
   principalId,
   scopeId,
   tenantId,
-  z,
   type PrincipalId,
   type ScopeId,
   type TenantId,
@@ -40,19 +44,29 @@ import {
   SCOPE_SWEEPER_NAME,
   type ScopeSweeperDo,
 } from '@substrat-run/adapter-cloudflare';
-import { readRoutedNode, RouterAssertionError, ulid, type ScopeStub } from '@substrat-run/kernel';
-import { mountPlatformSurface } from '@substrat-run/vertical-host';
-import { mountApi } from './routes.js';
+import type { ScopeStub } from '@substrat-run/kernel';
 import {
+  invocationLog,
+  kickFlags,
+  mountPlatformSurface,
+  readRoutedNode,
+  RouterAssertionError,
+} from '@substrat-run/vertical-host';
+import {
+  AuthConfigError,
   IdentityDO,
-  oidcAuthProvider,
-  oidcRpAuthProvider,
+  instanceAuthFor,
+  mintOwnerClaimLink,
   type AuthProvider,
 } from '@substrat-run/vertical-auth';
-import { MODULES, OWNER_ROLE_KEY, ROLES } from './provision.js';
+import { mountOwnerClaim } from '@substrat-run/vertical-auth/owner-claim-routes';
+import { mountSession } from '@substrat-run/vertical-auth/session-route';
+import { membersHook, mountInviteRoutes } from '@substrat-run/vertical-auth/invite-routes';
+import { mountApi } from './routes.js';
+import { envSpec, MODULES, OWNER_ROLE_KEY, permissions, ROLES } from './provision.js';
 
 /** The scope-DO class = the app binary: kernel + engines + this vertical, bundled. */
-export const ScopeDO = defineScopeDO(MODULES, {});
+export const ScopeDO = defineScopeDO(MODULES, {}, { permissions });
 /** The per-tenant identity DO (shared @substrat-run/vertical-auth) — bound as AUTH. */
 export { IdentityDO };
 
@@ -64,6 +78,8 @@ export { IdentityDO };
  * `/internal/delete-scope` removes them. Costs nothing while the roster is empty.
  */
 export const SweeperDO = defineScopeSweeperDO<Env>({
+  // #1232: the pass reports the version whose code actually ran (the deploy-injected binding).
+  versionId: (env) => env.SUBSTRAT_VERSION_ID ?? null,
   intervalMs: 120_000,
   host: hostFor,
 });
@@ -81,14 +97,16 @@ interface Node {
 }
 
 // A fixed dev node (valid ULIDs) — ONLY the fallback for local `wrangler dev`,
-// where there is no router to assert one; gated on ALLOW_DEV_HEADER (never set
-// in prod).
+// where there is no router to assert one; gated on ALLOW_DEV_NODE (never set in
+// prod). An ADDRESS, not an identity: it grants nobody anything.
 const DEV_NODE: Node = {
   tenantId: tenantId.parse('01JZ00000000000000000DEV01'),
   scopeId: scopeId.parse('01JZ00000000000000000DEV02'),
 };
 
 interface Env {
+  /** Injected at deploy (#1242); absent locally — the sweep record then reads NULL. */
+  SUBSTRAT_VERSION_ID?: string;
   /** One DO per scope — business data (sandbox-clean). */
   SCOPE: DurableObjectNamespace;
   /** The per-TENANT identity directory: sub→principal, owner seat, invites, delivered config. */
@@ -96,15 +114,16 @@ interface Env {
   /** The roster-keeping sweep singleton — the deployment's own timer (#461). */
   SWEEPER: DurableObjectNamespace;
   /**
-   * Standalone-deploy fallback ONLY: verify presented bearer tokens against this
-   * issuer when no `substrat:auth` was delivered (hosted installs always get the
-   * delivered config, which wins). A delivered per-scope value of the same key
-   * also wins — see `authProviderFor`.
+   * The standalone-deploy sign-in fallback (declared in TRIANGLE_ENV, src/manifest.ts).
+   * Typed here only so `wrangler dev --var` works: read ONLY through `instanceAuthFor`,
+   * where a delivered per-scope value wins over these deployment-wide bindings.
    */
+  AUTH_PROVIDER?: string;
   OIDC_ISSUER?: string;
   OIDC_AUDIENCE?: string;
-  /** Local dev only: when 'true', trust the `x-principal` header. NEVER set in prod. */
-  ALLOW_DEV_HEADER?: string;
+  /** Local `wrangler dev` only: when 'true', fall back to DEV_NODE if no router
+   *  asserted a node. Addresses an instance; authenticates nobody. NEVER set in prod. */
+  ALLOW_DEV_NODE?: string;
   /** Shared secret the router presents (how this worker knows the asserted node is real). */
   ROUTER_SECRET?: string;
   /** Shared secret the platform presents on /internal/* calls. */
@@ -115,18 +134,23 @@ interface Env {
 function nodeFor(req: Request, env: Env): Node {
   let routed;
   try {
-    routed = readRoutedNode(req.headers, { expectedSecret: env.ROUTER_SECRET });
+    routed = readRoutedNode(req.headers, {
+      expectedSecret: env.ROUTER_SECRET,
+      // #966: an unsigned assertion is refused unless this is an un-routed dev instance.
+      allowUnsigned: env.ALLOW_DEV_NODE === 'true',
+    });
   } catch (e) {
     if (e instanceof RouterAssertionError) throw new HTTPException(400, { message: e.message });
     throw e;
   }
   if (routed) return { tenantId: routed.tenantId, scopeId: routed.scopeId };
-  if (env.ALLOW_DEV_HEADER === 'true') return DEV_NODE;
+  if (env.ALLOW_DEV_NODE === 'true') return DEV_NODE;
   throw new HTTPException(503, { message: 'no scope was asserted for this request (missing router assertion)' });
 }
 
 function hostFor(env: Env): CloudflareScopeHost {
-  const host = new CloudflareScopeHost({ scope: env.SCOPE });
+  // `permissions` is the declared surface: a module it leaves out is refused at registration.
+  const host = new CloudflareScopeHost({ scope: env.SCOPE, permissions });
   for (const m of MODULES) host.registerModule(m);
   return host;
 }
@@ -136,104 +160,71 @@ function identityDo(env: Env, node: Node) {
   return env.AUTH.get(env.AUTH.idFromName(node.tenantId));
 }
 
-/** SHA-256 hex (Web Crypto). Invite tokens are stored + compared only as hashes. */
-async function sha256Hex(s: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 /**
- * The scope's DELIVERED auth choice (vertical-auth-detach.md §2.2/§2.3) — the
- * `substrat:auth` entry the dashboard configured at app creation, stored in the
- * tenant's identity DO. Parsed leniently: an absent or malformed entry means
- * "no choice delivered" and the standalone fallback below applies, so a bad
- * delivery can never lock an instance out. OIDC-only: this vertical runs no
- * credential store, so a delivered `builtin` fails the parse → treated as
- * "no choice" → fail closed, never a local account store.
+ * Everything this instance was configured with, in ONE DO hop: the delivered
+ * `substrat:auth` choice, the declared settings (TRIANGLE_ENV, resolved delivered >
+ * binding > manifest default) and the tenant's session secret. A bare `env.X` read
+ * would only ever see the deployment-wide default shared by every install.
  */
-const authChoice = z.object({
-  mode: z.literal('oidc'),
-  issuer: z.string().url().optional(),
-  clientId: z.string().min(1).optional(),
-  clientSecret: z.string().optional(),
-  audience: z.string().optional(),
-  cookieDomain: z.string().min(1).optional(),
-});
-const AUTH_CONFIG_KEY = 'substrat:auth';
-
-/** The scope's auth wiring, in one DO hop: delivered config + the tenant's session secret. */
-async function authWiringFor(env: Env, node: Node) {
-  const wiring = await identityDo(env, node).authWiring(node.scopeId);
-  const raw = wiring.config[AUTH_CONFIG_KEY];
-  let choice: z.infer<typeof authChoice> | null = null;
-  if (raw) {
-    try {
-      const parsed = authChoice.safeParse(JSON.parse(raw));
-      choice = parsed.success ? parsed.data : null;
-    } catch {
-      choice = null;
-    }
-  }
-  return { choice, sessionSecret: wiring.sessionSecret, config: wiring.config };
-}
-
-/**
- * The `AuthProvider` for this request, chosen by CONFIG. Per-SCOPE first
- * (hosted): a delivered `substrat:auth` builds the full relying-party provider —
- * one script, many issuers. No delivery: a per-scope/env `OIDC_ISSUER` verifies
- * presented bearer tokens (standalone deploys). Anything else is unconfigured —
- * fail closed rather than serving anyone.
- */
-async function authProviderFor(env: Env, req: Request): Promise<AuthProvider> {
-  const node = nodeFor(req, env);
-  const { choice, sessionSecret, config } = await authWiringFor(env, node);
-  if (choice?.mode === 'oidc') {
-    if (!choice.issuer || !choice.clientId) {
-      throw new HTTPException(503, { message: "this instance's OIDC configuration is incomplete — set issuer and clientId" });
-    }
-    return oidcRpAuthProvider({
-      issuer: choice.issuer,
-      clientId: choice.clientId,
-      clientSecret: choice.clientSecret ?? '',
-      sessionSecret,
-      ...(choice.audience ? { audience: choice.audience } : {}),
-      ...(choice.cookieDomain ? { cookieDomain: choice.cookieDomain } : {}),
-    });
-  }
-  const issuer = config['OIDC_ISSUER'] ?? env.OIDC_ISSUER;
-  if (issuer) {
-    const audience = config['OIDC_AUDIENCE'] ?? env.OIDC_AUDIENCE;
-    return oidcAuthProvider({ issuer, ...(audience ? { audience } : {}) });
-  }
-  throw new HTTPException(503, {
-    message: "this instance has no identity provider configured — deliver substrat:auth with mode 'oidc'",
+function authWiringFor(env: Env, node: Node) {
+  return instanceAuthFor({
+    directory: identityDo(env, node),
+    scopeId: node.scopeId,
+    envSpec,
+    env: env as unknown as Record<string, unknown>,
   });
 }
 
-/**
- * THE AUTH SEAM: resolve the caller to a PrincipalId, or null for nobody
- * (fail closed). Dev header (local only), else the configured provider verifies
- * the request → a subject, and the tenant's identity DO maps that subject → a
- * principal in this scope — claiming the owner seat on first login (TOFU).
- */
-async function principalFor(env: Env, req: Request): Promise<PrincipalId | null> {
-  if (env.ALLOW_DEV_HEADER === 'true') {
-    const parsed = principalId.safeParse(req.headers.get('x-principal') ?? '');
-    if (parsed.success) return parsed.data;
+/** The provider an already-read configuration selects; a refusal becomes its HTTP status. */
+function providerOf(instance: Awaited<ReturnType<typeof authWiringFor>>): AuthProvider {
+  try {
+    return instance.provider();
+  } catch (err) {
+    if (err instanceof AuthConfigError) throw new HTTPException(err.status, { message: err.message });
+    throw err;
   }
-  const subject = await (await authProviderFor(env, req)).resolve(req.headers);
-  if (!subject) return null;
-  const node = nodeFor(req, env);
-  const principal = await identityDo(env, node).resolvePrincipal(node.scopeId, subject.sub);
-  return principal ? principalId.parse(principal) : null;
 }
 
-/** Resolve caller + routed node → a scope stub. 401 if nobody. */
-async function stub(c: Context<{ Bindings: Env }>): Promise<ScopeStub> {
+/**
+ * The `AuthProvider` for this request, chosen by CONFIG. Per-SCOPE first (a
+ * delivered `substrat:auth` builds the full relying-party flow), then the
+ * deployment fallback (`AUTH_PROVIDER=oidc` + `OIDC_ISSUER` verifies bearer
+ * tokens), then fail closed — there is no builtin credential store.
+ */
+async function authProviderFor(env: Env, req: Request): Promise<AuthProvider> {
+  return providerOf(await authWiringFor(env, nodeFor(req, env)));
+}
+
+/**
+ * THE AUTH SEAM: the configured provider verifies the request → a subject, and the
+ * tenant's identity DO maps that subject → a principal in this scope (claiming the
+ * owner seat on first login). Null principal ⇒ nobody (fail closed).
+ */
+async function callerFor(env: Env, req: Request) {
+  const node = nodeFor(req, env);
+  const instance = await authWiringFor(env, node);
+  const subject = await providerOf(instance).resolve(req.headers);
+  if (!subject) return { identity: instance.identity, subject: null, principal: null };
+  const principal = await identityDo(env, node).resolvePrincipal(node.scopeId, subject.sub);
+  return { identity: instance.identity, subject, principal: principal ? principalId.parse(principal) : null };
+}
+
+/** Resolve caller + routed node → who they are and a scope stub. 401 if nobody. */
+async function caller(c: Context<{ Bindings: Env }>): Promise<{ principal: PrincipalId; scope: ScopeStub }> {
   const node = nodeFor(c.req.raw, c.env);
-  const principal = await principalFor(c.env, c.req.raw);
+  const { principal } = await callerFor(c.env, c.req.raw);
   if (!principal) throw new HTTPException(401, { message: 'unauthorized' });
-  return hostFor(c.env).getScope(principal, node.tenantId, node.scopeId);
+  const scope = await hostFor(c.env).getScope(principal, node.tenantId, node.scopeId, {
+    // An invoke that enqueued platform intents flags its response so the router kicks
+    // an immediate platform drain instead of waiting for the sweep. Costs nothing until then.
+    ...kickFlags((name, value) => c.header(name, value)),
+  });
+  return { principal, scope };
+}
+
+/** The caller's scope stub. 401 if nobody. */
+async function stub(c: Context<{ Bindings: Env }>): Promise<ScopeStub> {
+  return (await caller(c)).scope;
 }
 
 /**
@@ -241,14 +232,26 @@ async function stub(c: Context<{ Bindings: Env }>): Promise<ScopeStub> {
  * own grants via `garden/whoami` — the scope-local permission model, not a
  * second source of truth. Throws 401 (no session) / 403 (not the owner).
  */
-async function requireOwner(c: Context<{ Bindings: Env }>): Promise<ScopeStub> {
-  const scope = await stub(c);
+async function requireOwner(c: Context<{ Bindings: Env }>): Promise<{ principal: PrincipalId }> {
+  const { principal, scope } = await caller(c);
   const who = await scope.invoke<{ role: string }>('garden/whoami', undefined);
   if (who.role !== OWNER_ROLE_KEY) throw new HTTPException(403, { message: 'only the garden owner can manage invites' });
-  return scope;
+  return { principal };
 }
 
 const app = new Hono<{ Bindings: Env }>();
+
+// FIRST, before any route: Hono composes handlers in registration order and stops at
+// the one that answers, so a route registered above this line would never be logged.
+// The line it writes attributes this vertical's invocations to the tenant they served,
+// written from a VERIFIED router assertion — never from the bare header.
+app.use(
+  '*',
+  invocationLog<Env>({
+    routerSecret: (env) => env.ROUTER_SECRET,
+    allowUnsigned: (env) => env.ALLOW_DEV_NODE === 'true',
+  }),
+);
 
 // ── The vertical's API — the SAME derived table `server.ts` mounts (src/routes.ts) ──
 // Every operation `spec/model.ts` declares `http` for, /api/openapi.json, the
@@ -264,24 +267,19 @@ mountApi(app, stub);
 app.on(['GET', 'POST'], '/api/auth/*', async (c) => (await authProviderFor(c.env, c.req.raw)).handle(c.req.raw));
 
 /**
- * Who am I, in the shape the SPA centres on. No session: if the owner seat is
- * unclaimed this instance is awaiting first sign-in — tell the SPA so it can
- * say "sign in to claim this garden" instead of a bare 401.
+ * Who am I — vertical-auth's session route: `{ principal, display, email?, role }`, or
+ * `{ status: 'needs-setup', firstSignInOpen }` while the owner seat is unclaimed, so the
+ * SPA can say "sign in to claim this garden" instead of a bare 401. The role hint comes
+ * from the scope itself (`garden/whoami`).
  */
-app.get('/api/me', async (c) => {
-  const node = nodeFor(c.req.raw, c.env);
-  const principal = await principalFor(c.env, c.req.raw);
-  if (!principal) {
-    const needsSetup = await identityDo(c.env, node).needsSetup(node.scopeId);
-    return needsSetup ? c.json({ status: 'needs-setup' }) : c.json({ error: 'unauthorized' }, 401);
-  }
-  const scope = await hostFor(c.env).getScope(principal, node.tenantId, node.scopeId);
-  const who = await scope.invoke<{ role: string }>('garden/whoami', undefined);
-  // A display name when the provider carries one (the dev-header path carries none).
-  const subject = await authProviderFor(c.env, c.req.raw)
-    .then((p) => p.resolve(c.req.raw.headers))
-    .catch(() => null);
-  return c.json({ key: principal, display: subject?.name ?? subject?.email ?? 'You', role: who.role });
+mountSession(app, {
+  caller: async (c) => ({ node: nodeFor(c.req.raw, c.env), ...(await callerFor(c.env, c.req.raw)) }),
+  directory: identityDo,
+  async extra(c, { node, principal }) {
+    const scope = await hostFor(c.env).getScope(principalId.parse(principal), node.tenantId, node.scopeId);
+    const who = await scope.invoke<{ role: string }>('garden/whoami', undefined);
+    return { role: who.role };
+  },
 });
 
 // The dev principal picker exists only on the local dev server (src/server.ts) —
@@ -290,59 +288,44 @@ app.get('/api/cast', (c) => c.json({}));
 
 /**
  * Invites — the join path for the viewer (concept §3's invite-a-viewer, on the
- * identity directory): creating one pre-mints a principal, grants it the chosen
- * role at scope level, and records the invite keyed by the token's hash; the
- * plaintext token rides only in the returned accept link. The invitee
- * authenticates at the issuer, opens the link, and the claim binds their `sub`
- * to the pre-minted principal.
+ * identity directory). The four routes — list, create, revoke, accept — are
+ * `@substrat-run/vertical-auth`'s: creating one pre-mints a principal, grants it the
+ * chosen role BOUNDED by what the owner holds, and mints the accept link as a
+ * single-use, expiring `become` capability in the scope (on the spine). The invitee
+ * signs in at the issuer, opens the link, and the claim binds their `sub` to the
+ * pre-minted principal. An invite naming an address is accepted only from a session
+ * whose issuer verified that address.
  */
-const inviteBody = z.object({
-  email: z.string().email().optional(),
-  roleKey: z.string().min(1),
-});
-
-app.get('/api/invites', async (c) => {
-  const node = nodeFor(c.req.raw, c.env);
-  await requireOwner(c);
-  return c.json({ roles: ROLES.map((r) => r.key), invites: await identityDo(c.env, node).listInvites(node.scopeId) });
-});
-
-app.post('/api/invites', async (c) => {
-  const node = nodeFor(c.req.raw, c.env);
-  await requireOwner(c);
-  const { email, roleKey } = inviteBody.parse(await c.req.json());
-  if (!ROLES.some((r) => r.key === roleKey)) throw new HTTPException(400, { message: `unknown role '${roleKey}'` });
-  const principal = principalId.parse(ulid());
-  // A long, URL-safe token; only its hash is stored. Two UUIDs = 256 bits of entropy.
-  const token = (crypto.randomUUID() + crypto.randomUUID()).replace(/-/g, '');
-  await hostFor(c.env).assignScopeRole(node.scopeId, principal, roleKey);
-  await identityDo(c.env, node).createInvite(node.scopeId, principal, roleKey, email ?? null, await sha256Hex(token));
-  return c.json(
-    { principal, roleKey, email: email ?? null, acceptUrl: `${new URL(c.req.raw.url).origin}/?invite=${token}` },
-    201,
-  );
-});
-
-app.post('/api/invites/:principal/revoke', async (c) => {
-  const node = nodeFor(c.req.raw, c.env);
-  await requireOwner(c);
-  await identityDo(c.env, node).revokeInvite(node.scopeId, c.req.param('principal'));
-  return c.body(null, 204);
+mountInviteRoutes(app, {
+  nodeFor,
+  requireAdmin: requireOwner,
+  roles: ROLES.map((r) => r.key),
+  directory: identityDo,
+  assignScopeRoleBounded: (env, node, by, assignee, roleKey) =>
+    hostFor(env).assignScopeRoleBounded(node.tenantId, node.scopeId, by, assignee, roleKey),
+  revokeScopeRole: (env, scope, principal, roleKey) => hostFor(env).revokeScopeRole(scope, principal, roleKey),
+  revokeScopeRolesBounded: (env, node, by, principal) =>
+    hostFor(env).revokeScopeRolesBounded(node.tenantId, node.scopeId, by, principal),
+  mintBecomeCapabilityBounded: (env, node, by, input) =>
+    hostFor(env).mintBecomeCapabilityBounded(node.tenantId, node.scopeId, by, input),
+  revokeBecomeCapability: (env, node, capabilityId, by) =>
+    hostFor(env).revokeBecomeCapability(node.tenantId, node.scopeId, capabilityId, by),
+  exchangeCapability: (env, node, secret) =>
+    hostFor(env).exchangeCapability(node.tenantId, node.scopeId, secret, { mode: 'become' }),
+  becomeLinkStates: (env, node, ids) => hostFor(env).becomeLinkStates(node.tenantId, node.scopeId, ids),
+  authProvider: authProviderFor,
 });
 
 /**
- * Accept an invite: the invitee signs in at the issuer first, then claims while
- * authenticated. Binds their subject → the invite's pre-minted principal;
- * `/api/me` then resolves them as that member.
+ * Claim the owner seat by link (`POST /api/claim-owner`): when the first-sign-in
+ * window has closed with the seat still empty, the dashboard mints a claim link
+ * (`/?claim=…`); the installer signs in at the issuer and presents it here.
  */
-app.post('/api/accept-invite', async (c) => {
-  const node = nodeFor(c.req.raw, c.env);
-  const subject = await (await authProviderFor(c.env, c.req.raw)).resolve(c.req.raw.headers);
-  if (!subject) throw new HTTPException(401, { message: 'sign in before accepting an invite' });
-  const { token } = z.object({ token: z.string().min(1) }).parse(await c.req.json());
-  const principal = await identityDo(c.env, node).claimInvite(node.scopeId, subject.sub, await sha256Hex(token));
-  if (!principal) throw new HTTPException(400, { message: 'this invite is invalid or already used' });
-  return c.json({ ok: true, principal });
+mountOwnerClaim(app, {
+  nodeFor,
+  authProvider: authProviderFor,
+  directory: identityDo,
+  host: hostFor,
 });
 
 // ── /internal/* — the platform-gated management contract ────────────────────
@@ -356,24 +339,44 @@ app.post('/api/accept-invite', async (c) => {
 // The hooks: a newly provisioned scope joins the sweep roster (#461) AND records
 // its owner seat in the identity directory (the TOFU claim + the durable
 // owner-of-record a reconcile heals from); `onConfigure` is the delivery half of
-// the dashboard's Env tab — how `substrat:auth` reaches this instance.
+// the dashboard's Env and Identity tabs — how `substrat:auth` reaches this instance.
 mountPlatformSurface<Env>(app, {
   platformSecret: (env) => env.PLATFORM_SECRET,
   hostFor,
   roles: ROLES,
   ownerRoleKey: OWNER_ROLE_KEY,
   onProvision: async (env, b) => {
-    await identityDo(env, { tenantId: b.tenantId, scopeId: b.scopeId }).setPendingOwner(b.scopeId, b.owner);
+    // `parentScopeId` binds a sibling scope's owner seat to the login the parent binds
+    // to that owner, instead of opening a first-sign-in window.
+    await identityDo(env, { tenantId: b.tenantId, scopeId: b.scopeId }).setPendingOwner(b.scopeId, b.owner, b.parentScopeId);
     await sweeper(env).noteScope(b.tenantId, b.scopeId);
   },
   resolveOwner: async (env, ref) => {
     const owner = await identityDo(env, ref).getOwnerOfRecord(ref.scopeId);
     return owner ? principalId.parse(owner) : null;
   },
+  // The dashboard's Members section: the same roles and directory as the invite routes
+  // above, so a viewer invited from the dashboard accepts at this app's own route.
+  members: membersHook({ roles: ROLES.map((r) => r.key), directory: identityDo }),
   onConfigure: (env, b) =>
     identityDo(env, { tenantId: b.tenantId, scopeId: b.scopeId }).setScopeConfig(b.scopeId, b.entries),
-  onDeleteScope: async (env, s) => {
+  onReadPreviewConfig: (env, b) =>
+    identityDo(env, { tenantId: b.tenantId, scopeId: b.scopeId }).getScopeConfig(b.scopeId),
+  // The owner seat as the platform may see it, and the claim link it may mint for one
+  // that sits empty after the first-sign-in window.
+  ownerSeat: (env, ref) => identityDo(env, ref).ownerSeat(ref.scopeId),
+  mintOwnerClaim: (env, ref, input) =>
+    mintOwnerClaimLink({ directory: identityDo(env, ref), host: hostFor(env) }, ref, input.origin, input.actor),
+  // The owner hand-over: moves the record the reconcile re-sources its owner from.
+  transferOwner: (env, ref, input) =>
+    identityDo(env, ref).transferOwner(ref.scopeId, input.from, input.to, input.toHoldsRole),
+  completeOwnerTransfer: (env, ref, input) => identityDo(env, ref).completeOwnerTransfer(ref.scopeId, input.from, input.to),
+  abandonOwnerTransfer: (env, ref, input) =>
+    identityDo(env, ref).abandonOwnerTransfer(ref.scopeId, input.from, input.to, input.toHoldsRole),
+  // A reaped scope's alarm must never wake it again, and its delivered config goes with it.
+  onDeleteScope: async (env, s, tenantId) => {
     await sweeper(env).forgetScope(s);
+    if (tenantId) await identityDo(env, { tenantId, scopeId: s }).deleteScopeConfig(s);
   },
 });
 
@@ -388,7 +391,6 @@ app.all('*', (c) =>
   c.json({
     service: 'triangle',
     api: 'derived from spec/model.ts — see /api/openapi.json; MCP at /api/mcp',
-    docs: 'https://substrat.net',
   }),
 );
 

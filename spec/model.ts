@@ -497,6 +497,8 @@ export const gardenOperations = defineOperations(gardenEntities, GARDEN_PERMISSI
     output: gardenEntities.species.fields,
     paged: { over: { entity: 'species', sortable: ['common_name', 'created_at'] } },
     http: { method: 'GET', path: '/species' },
+    // The kernel writes it: check `garden:read`, then walk the declared page.
+    derive: 'list',
   },
 
   'garden/upsert-species': {

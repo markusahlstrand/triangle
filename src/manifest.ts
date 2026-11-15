@@ -12,6 +12,7 @@
  * Triangle composes NO engines (concept §3): every table is the vertical's own.
  */
 import {
+  type EnvVarSpec,
   listsDeclaredBy,
   manifestEntities,
   manifestOperations,
@@ -27,6 +28,46 @@ export const GARDEN_PERM = {
   /** See the map and everything on it, read the audit trail, and export DXF. What a viewer gets. */
   read: permissionKey.parse('garden:read'),
 } as const;
+
+/**
+ * The instance settings this vertical reads — the standalone-deploy fallback for
+ * sign-in only. A hosted install gets its issuer as the delivered `substrat:auth`
+ * choice (picked at app creation), which always wins; these apply only when no
+ * choice was delivered. Read through `instanceAuthFor` (delivered > binding >
+ * default), never off `env` directly. No default for AUTH_PROVIDER: an install
+ * with neither a delivered choice nor these set fails closed (503).
+ * `src/provision.ts` re-exports this as `envSpec`, which `substrat push` uploads.
+ */
+export const TRIANGLE_ENV: EnvVarSpec[] = [
+  {
+    key: 'AUTH_PROVIDER',
+    label: 'Auth provider',
+    description:
+      "OIDC-only: Triangle runs no credential store. When no per-instance `substrat:auth` choice is delivered, 'oidc' verifies bearer tokens against OIDC_ISSUER (standalone deploys).",
+    placeholder: 'oidc',
+    required: false,
+    secret: false,
+    group: 'Auth',
+  },
+  {
+    key: 'OIDC_ISSUER',
+    label: 'OIDC issuer',
+    description: "The issuer URL bearer tokens are verified against when the provider is 'oidc'.",
+    placeholder: 'https://auth.example.com',
+    required: false,
+    secret: false,
+    group: 'Auth',
+  },
+  {
+    key: 'OIDC_AUDIENCE',
+    label: 'OIDC audience',
+    description: 'Expected `aud` claim of verified bearer tokens (optional; issuer-dependent).',
+    placeholder: 'https://api.example.com',
+    required: false,
+    secret: false,
+    group: 'Auth',
+  },
+];
 
 export const gardenManifest = moduleManifest.parse({
   id: 'garden',
@@ -47,4 +88,5 @@ export const gardenManifest = moduleManifest.parse({
   // The kernel-composed paged reads (`paged.over`) and the indexes behind them.
   lists: listsDeclaredBy(gardenOperations, gardenEntities),
   entitlementKey: 'garden',
+  envSpec: TRIANGLE_ENV,
 });
