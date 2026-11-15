@@ -41,7 +41,7 @@ import {
 } from '../spec/model.js';
 import { gardenManifest, GARDEN_PERM } from './manifest.js';
 import { gardenMigrations } from './migrations.js';
-import { solveGarden, type SolveConstraint, type SolvePoint } from './geometry.js';
+import { findSuspects, solveGarden, type SolveConstraint, type SolvePoint, type Suspect } from './geometry.js';
 import { buildDxf, sampleRun, type DxfPolyline } from './dxf.js';
 
 export { FEATURE_TYPES } from '../spec/model.js';
@@ -194,7 +194,20 @@ function runSolve(ctx: OperationContext, siteId: string, persist: boolean): Solv
     measurementResidualsCm: residualsCm(result.measurementResiduals),
     constraintResidualsCm: residualsCm(result.constraintResiduals),
     rmsCm: cm(result.rms),
+    suspects: suspectsCm(findSuspects(solvePoints, solveMeasurements, solveConstraints, result)),
   };
+}
+
+/** The solver's suspects, in the report's units (cm). */
+function suspectsCm(suspects: Suspect[]): SolveReport['suspects'] {
+  return suspects.map((s) => ({
+    kind: s.kind,
+    id: s.id,
+    expectedCm: s.expected === null ? null : cm(s.expected),
+    offByCm: cm(s.offBy),
+    explains: Math.round(s.explains * 100) / 100,
+    worstWithoutCm: cm(s.worstWithout),
+  }));
 }
 
 function count(ctx: OperationContext, table: string, siteId: string): number {
@@ -502,6 +515,7 @@ const operations = {
       measurementResidualsCm: residualsCm(result.measurementResiduals),
       constraintResidualsCm: residualsCm(result.constraintResiduals),
       rmsCm: cm(result.rms),
+      suspects: suspectsCm(findSuspects(solvePoints, solveMeasurements, solveConstraints, result)),
     };
   },
 

@@ -300,6 +300,48 @@
                         },
                         "rmsCm": {
                           "type": "number"
+                        },
+                        "suspects": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "measurement",
+                                  "constraint"
+                                ]
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "expectedCm": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "offByCm": {
+                                "type": "number"
+                              },
+                              "explains": {
+                                "type": "number"
+                              },
+                              "worstWithoutCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id",
+                              "expectedCm",
+                              "offByCm",
+                              "explains",
+                              "worstWithoutCm"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [
@@ -310,7 +352,8 @@
                         "needsSide",
                         "measurementResidualsCm",
                         "constraintResidualsCm",
-                        "rmsCm"
+                        "rmsCm",
+                        "suspects"
                       ],
                       "additionalProperties": false
                     }
@@ -650,6 +693,48 @@
                         },
                         "rmsCm": {
                           "type": "number"
+                        },
+                        "suspects": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "measurement",
+                                  "constraint"
+                                ]
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "expectedCm": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "offByCm": {
+                                "type": "number"
+                              },
+                              "explains": {
+                                "type": "number"
+                              },
+                              "worstWithoutCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id",
+                              "expectedCm",
+                              "offByCm",
+                              "explains",
+                              "worstWithoutCm"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [
@@ -660,7 +745,8 @@
                         "needsSide",
                         "measurementResidualsCm",
                         "constraintResidualsCm",
-                        "rmsCm"
+                        "rmsCm",
+                        "suspects"
                       ],
                       "additionalProperties": false
                     }
@@ -1182,6 +1268,48 @@
                         },
                         "rmsCm": {
                           "type": "number"
+                        },
+                        "suspects": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "measurement",
+                                  "constraint"
+                                ]
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "expectedCm": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "offByCm": {
+                                "type": "number"
+                              },
+                              "explains": {
+                                "type": "number"
+                              },
+                              "worstWithoutCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id",
+                              "expectedCm",
+                              "offByCm",
+                              "explains",
+                              "worstWithoutCm"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [
@@ -1192,7 +1320,8 @@
                         "needsSide",
                         "measurementResidualsCm",
                         "constraintResidualsCm",
-                        "rmsCm"
+                        "rmsCm",
+                        "suspects"
                       ],
                       "additionalProperties": false
                     }
@@ -2051,6 +2180,48 @@
                         },
                         "rmsCm": {
                           "type": "number"
+                        },
+                        "suspects": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "measurement",
+                                  "constraint"
+                                ]
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "expectedCm": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "offByCm": {
+                                "type": "number"
+                              },
+                              "explains": {
+                                "type": "number"
+                              },
+                              "worstWithoutCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id",
+                              "expectedCm",
+                              "offByCm",
+                              "explains",
+                              "worstWithoutCm"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [
@@ -2061,7 +2232,8 @@
                         "needsSide",
                         "measurementResidualsCm",
                         "constraintResidualsCm",
-                        "rmsCm"
+                        "rmsCm",
+                        "suspects"
                       ],
                       "additionalProperties": false
                     }
@@ -2584,6 +2756,48 @@
                         },
                         "rmsCm": {
                           "type": "number"
+                        },
+                        "suspects": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "measurement",
+                                  "constraint"
+                                ]
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "expectedCm": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "offByCm": {
+                                "type": "number"
+                              },
+                              "explains": {
+                                "type": "number"
+                              },
+                              "worstWithoutCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id",
+                              "expectedCm",
+                              "offByCm",
+                              "explains",
+                              "worstWithoutCm"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [
@@ -2594,7 +2808,8 @@
                         "needsSide",
                         "measurementResidualsCm",
                         "constraintResidualsCm",
-                        "rmsCm"
+                        "rmsCm",
+                        "suspects"
                       ],
                       "additionalProperties": false
                     }
@@ -2856,6 +3071,48 @@
                         },
                         "rmsCm": {
                           "type": "number"
+                        },
+                        "suspects": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "measurement",
+                                  "constraint"
+                                ]
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "expectedCm": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "offByCm": {
+                                "type": "number"
+                              },
+                              "explains": {
+                                "type": "number"
+                              },
+                              "worstWithoutCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id",
+                              "expectedCm",
+                              "offByCm",
+                              "explains",
+                              "worstWithoutCm"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [
@@ -2866,7 +3123,8 @@
                         "needsSide",
                         "measurementResidualsCm",
                         "constraintResidualsCm",
-                        "rmsCm"
+                        "rmsCm",
+                        "suspects"
                       ],
                       "additionalProperties": false
                     }
@@ -3258,6 +3516,48 @@
                         },
                         "rmsCm": {
                           "type": "number"
+                        },
+                        "suspects": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "measurement",
+                                  "constraint"
+                                ]
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "expectedCm": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "offByCm": {
+                                "type": "number"
+                              },
+                              "explains": {
+                                "type": "number"
+                              },
+                              "worstWithoutCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id",
+                              "expectedCm",
+                              "offByCm",
+                              "explains",
+                              "worstWithoutCm"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [
@@ -3268,7 +3568,8 @@
                         "needsSide",
                         "measurementResidualsCm",
                         "constraintResidualsCm",
-                        "rmsCm"
+                        "rmsCm",
+                        "suspects"
                       ],
                       "additionalProperties": false
                     }
@@ -3987,6 +4288,48 @@
                         },
                         "rmsCm": {
                           "type": "number"
+                        },
+                        "suspects": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "measurement",
+                                  "constraint"
+                                ]
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "expectedCm": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "offByCm": {
+                                "type": "number"
+                              },
+                              "explains": {
+                                "type": "number"
+                              },
+                              "worstWithoutCm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id",
+                              "expectedCm",
+                              "offByCm",
+                              "explains",
+                              "worstWithoutCm"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [
@@ -3997,7 +4340,8 @@
                         "needsSide",
                         "measurementResidualsCm",
                         "constraintResidualsCm",
-                        "rmsCm"
+                        "rmsCm",
+                        "suspects"
                       ],
                       "additionalProperties": false
                     }
@@ -4620,6 +4964,48 @@
                     },
                     "rmsCm": {
                       "type": "number"
+                    },
+                    "suspects": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "measurement",
+                              "constraint"
+                            ]
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "expectedCm": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "offByCm": {
+                            "type": "number"
+                          },
+                          "explains": {
+                            "type": "number"
+                          },
+                          "worstWithoutCm": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "id",
+                          "expectedCm",
+                          "offByCm",
+                          "explains",
+                          "worstWithoutCm"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -4630,7 +5016,8 @@
                     "needsSide",
                     "measurementResidualsCm",
                     "constraintResidualsCm",
-                    "rmsCm"
+                    "rmsCm",
+                    "suspects"
                   ],
                   "additionalProperties": false
                 }
@@ -4974,6 +5361,48 @@
                     },
                     "rmsCm": {
                       "type": "number"
+                    },
+                    "suspects": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "measurement",
+                              "constraint"
+                            ]
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "expectedCm": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "offByCm": {
+                            "type": "number"
+                          },
+                          "explains": {
+                            "type": "number"
+                          },
+                          "worstWithoutCm": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "id",
+                          "expectedCm",
+                          "offByCm",
+                          "explains",
+                          "worstWithoutCm"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -4984,7 +5413,8 @@
                     "needsSide",
                     "measurementResidualsCm",
                     "constraintResidualsCm",
-                    "rmsCm"
+                    "rmsCm",
+                    "suspects"
                   ],
                   "additionalProperties": false
                 }

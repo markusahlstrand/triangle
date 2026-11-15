@@ -275,6 +275,37 @@ export function GardenMap(props: {
             );
           })}
 
+        {/* Suspect tape pulls — drawn whether or not the tape overlay is on: the survey's
+            own verdict on which number is probably wrong. */}
+        {site.solve.suspects.map((s) => {
+          if (s.kind !== 'measurement') return null;
+          const m = site.measurements.find((x) => x.id === s.id);
+          const a = m && byId.get(m.point_a);
+          const b = m && byId.get(m.point_b);
+          if (!m || !a || !b || a.x === null || b.x === null) return null;
+          return (
+            <g
+              key={`suspect-${s.id}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                props.onSelectMeasurement(m.id);
+              }}
+              style={{ cursor: 'pointer' }}
+            >
+              <line x1={a.x} y1={-a.y!} x2={b.x} y2={-b.y!} stroke="transparent" strokeWidth={dot * 2} />
+              <line
+                x1={a.x}
+                y1={-a.y!}
+                x2={b.x}
+                y2={-b.y!}
+                stroke={RESIDUAL_COLOR.bad}
+                strokeWidth={0.06}
+                strokeDasharray="0.25 0.15"
+              />
+            </g>
+          );
+        })}
+
         {/* Constraint marks — same violet as the tape (design 22) */}
         {site.constraints.map((c) => {
           if (c.kind !== 'right-angle') return null;

@@ -183,11 +183,14 @@ const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCas
 export function AddMeasurementSheet(props: {
   site: SitePayload;
   initialA?: string;
+  initialB?: string;
   onClose: () => void;
   onSaved: (solve: SolveReport) => Promise<void>;
+  /** Hand the picking of one end to the map; the sheet reopens with what is chosen so far. */
+  onPickOnMap?: (which: 'a' | 'b', a: string | null, b: string | null) => void;
 }) {
   const [a, setA] = useState<string | null>(props.initialA ?? null);
-  const [b, setB] = useState<string | null>(null);
+  const [b, setB] = useState<string | null>(props.initialB ?? null);
   const [cm, setCm] = useState('');
   const [result, setResult] = useState<string | null>(null);
   const action = useAction(() => {});
@@ -263,7 +266,12 @@ export function AddMeasurementSheet(props: {
       {action.error && <ErrorNote>{action.error}</ErrorNote>}
       <div className="field">
         <div className="section-label">From {a ? `· ${byId.get(a)?.name}` : '· pick a point'}</div>
-        {!a && <PointPicker site={props.site} selected={a} onPick={setA} />}
+        {!a && props.onPickOnMap && (
+          <wa-button class="change" size="small" appearance="plain" onClick={() => props.onPickOnMap!('a', a, b)}>
+            Pick on map
+          </wa-button>
+        )}
+        {!a && <PointPicker site={props.site} exclude={b ? [b] : []} selected={a} onPick={setA} />}
         {a && (
           <wa-button class="change" size="small" appearance="plain" onClick={() => setA(null)}>
             change
@@ -273,6 +281,11 @@ export function AddMeasurementSheet(props: {
       {a && (
         <div className="field">
           <div className="section-label">To {b ? `· ${byId.get(b)?.name}` : '· pick a point'}</div>
+          {!b && props.onPickOnMap && (
+            <wa-button class="change" size="small" appearance="plain" onClick={() => props.onPickOnMap!('b', a, b)}>
+              Pick on map
+            </wa-button>
+          )}
           {!b && <PointPicker site={props.site} exclude={[a]} selected={b} onPick={setB} />}
           {b && (
             <wa-button class="change" size="small" appearance="plain" onClick={() => setB(null)}>
@@ -393,6 +406,7 @@ export function MeasurementSheet(props: {
   const b = props.site.points.find((p) => p.id === m.point_b);
   const r = props.site.solve.measurementResidualsCm[m.id];
   const cls = r === undefined ? 'none' : r <= 2 ? 'good' : r <= 5 ? 'warn' : 'bad';
+  const suspect = props.site.solve.suspects.find((s) => s.kind === 'measurement' && s.id === m.id);
   return (
     <Sheet title={`${a?.name ?? '?'} ↔ ${b?.name ?? '?'}`} onClose={props.onClose}>
       {action.error && <ErrorNote>{action.error}</ErrorNote>}
@@ -400,6 +414,12 @@ export function MeasurementSheet(props: {
         {Math.round(m.distance_m * 100)}
         <span className="unit">cm</span>
       </div>
+      {suspect && (
+        <wa-callout variant="warning" size="small">
+          {suspectsAreTied(props.site.solve.suspects) ? 'This may be the wrong one: ' : 'Probably wrong: '}
+          the rest of the survey says {Math.round(suspect.expectedCm ?? 0)} cm ({suspect.offByCm.toFixed(0)} cm off).
+        </wa-callout>
+      )}
       <div className="meta">
         <span className={`residual ${cls}`} />{' '}
         {r === undefined ? 'no residual yet — the network has no redundancy here' : `residual ${r.toFixed(1)} cm`}
@@ -1011,4 +1031,58 @@ export function constraintLabel(c: Constraint, site: SitePayload): string {
   if (c.kind === 'parallel') return `${names[0]}→${names[1]} ∥ ${names[2]}→${names[3]}`;
   if (c.kind === 'equal-length') return `|${names[0]}→${names[1]}| = |${names[2]}→${names[3]}|`;
   return `${names.join(' — ')} colinear`;
+}
+
+// ── Suspects — which tape pull (or assumption) is probably wrong ─────────────
+
+export type Suspect = SitePayload['solve']['suspects'][number];
+
+/** Two suspects the survey explains almost equally well cannot be told apart. */
+export function suspectsAreTied(s: readonly Suspect[]): boolean {
+  return s.length > 1 && s[0]!.explains - s[1]!.explains < 0.05;
+}
+
+/** "house NW ↔ house SE: taped 1487 cm, the rest says 1437 cm" — or the constraint's own words. */
+export function suspectLine(s: Suspect, site: SitePayload): string {
+  const byId = new Map(site.points.map((p) => [p.id, p.name]));
+  if (s.kind === 'measurement') {
+    const m = site.measurements.find((x) => x.id === s.id);
+    if (!m) return 'a measurement';
+    const taped = Math.round(m.distance_m * 100);
+    return `${byId.get(m.point_a)} ↔ ${byId.get(m.point_b)}: taped ${taped} cm, the rest says ${Math.round(s.expectedCm ?? 0)} cm`;
+  }
+  const c = site.constraints.find((x) => x.id === s.id);
+  return c ? `${constraintLabel(c, site)} — the tape says it is off by ${s.offByCm.toFixed(0)} cm` : 'a constraint';
+}
+
+/**
+ * The verdict, said plainly: one likely culprit, or — when the survey cannot tell — the
+ * candidates and what would settle it. Each measurement opens its sheet.
+ */
+export function SuspectsNote(props: { site: SitePayload; onOpenMeasurement: (id: string) => void }) {
+  const s = props.site.solve.suspects;
+  if (s.length === 0) return null;
+  const tied = suspectsAreTied(s);
+  const shown = tied ? s.filter((x) => s[0]!.explains - x.explains < 0.05) : [s[0]!];
+  return (
+    <div className="suspects">
+      <div className="section-label">{tied ? 'One of these is probably wrong' : 'Probably wrong'}</div>
+      {shown.map((x) =>
+        x.kind === 'measurement' ? (
+          <button key={x.id} className="meta suspect" onClick={() => props.onOpenMeasurement(x.id)}>
+            {suspectLine(x, props.site)}
+          </button>
+        ) : (
+          <div key={x.id} className="meta suspect">
+            {suspectLine(x, props.site)}
+          </div>
+        ),
+      )}
+      <div className="hint">
+        {tied
+          ? 'The survey has too few cross-checks here to tell which. Tape one more distance across this part of the garden.'
+          : `Without it, every other distance agrees to ${s[0]!.worstWithoutCm.toFixed(1)} cm. Re-tape it, or delete it.`}
+      </div>
+    </div>
+  );
 }

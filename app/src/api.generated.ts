@@ -167,6 +167,7 @@ export interface SolveReport {
   measurementResidualsCm: Record<string, number>;
   constraintResidualsCm: Record<string, number>;
   rmsCm: number;
+  suspects: ({ kind: "measurement" | "constraint"; id: string; expectedCm: number | null; offByCm: number; explains: number; worstWithoutCm: number })[];
 }
 
 /** `sitePayload` — a published schema, not a stored row. */

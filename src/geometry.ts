@@ -390,3 +390,114 @@ function solveLinear(A: number[][], n: number): number[] | null {
   }
   return A.map((row, i) => row[n]! / row[i]!);
 }
+
+// ── Blunder detection ───────────────────────────────────────────────────────
+// One bad tape pull (a misread, the wrong pair) does not stay in its own line: the
+// adjustment spreads it over every neighbour, so the residuals around it all go amber
+// and a right angle bends. Which one is it? Leave each observation out in turn and
+// re-solve: the one whose absence lets the rest agree is the likely culprit, and the
+// solve without it says what the tape should have read.
+
+export interface Suspect {
+  kind: 'measurement' | 'constraint';
+  id: string;
+  /** For a measurement: what the rest of the survey says the distance is, meters. */
+  expected: number | null;
+  /** How far the observation is from what the rest says, meters (a constraint: its residual unenforced). */
+  offBy: number;
+  /** The share of the survey's misfit that goes away without it, 0..1. */
+  explains: number;
+  /** The worst remaining measurement residual without it, meters. */
+  worstWithout: number;
+}
+
+/** A misfit below this is tape noise — nothing worth accusing anyone of. */
+const SUSPECT_FLOOR_M = 0.02;
+
+function misfit(r: SolveResult): number {
+  let s = 0;
+  for (const v of r.measurementResiduals.values()) s += v * v;
+  for (const v of r.constraintResiduals.values()) s += (CONSTRAINT_WEIGHT * v) ** 2;
+  return s;
+}
+
+/**
+ * Rank the observations most likely to be wrong, best first (at most `limit`). Empty when
+ * the survey already agrees to within tape noise, or when no single observation explains
+ * most of the misfit. An observation the survey cannot do without (leaving it out places
+ * fewer points) is never accused: without redundancy there is nothing to check it against.
+ */
+export function findSuspects(
+  points: SolvePoint[],
+  measurements: SolveMeasurement[],
+  constraints: SolveConstraint[],
+  base: SolveResult = solveGarden(points, measurements, constraints),
+  limit = 3,
+): Suspect[] {
+  const worst = Math.max(0, ...base.measurementResiduals.values(), ...base.constraintResiduals.values());
+  if (worst <= SUSPECT_FLOOR_M) return [];
+  const total = misfit(base);
+  if (total <= 0) return [];
+
+  const out: Suspect[] = [];
+  const consider = (kind: Suspect['kind'], id: string, without: SolveResult, offBy: number, expected: number | null) => {
+    if (without.placed.length < base.placed.length) return;
+    const explains = 1 - misfit(without) / total;
+    if (explains < 0.5 || offBy <= SUSPECT_FLOOR_M) return;
+    const worstWithout = Math.max(0, ...without.measurementResiduals.values());
+    out.push({ kind, id, expected, offBy, explains, worstWithout });
+  };
+
+  for (const m of measurements) {
+    if (!base.measurementResiduals.has(m.id)) continue;
+    const without = solveGarden(points, measurements.filter((x) => x.id !== m.id), constraints);
+    const a = without.coords.get(m.a);
+    const b = without.coords.get(m.b);
+    if (!a || !b) continue;
+    const expected = dist(a, b);
+    consider('measurement', m.id, without, Math.abs(expected - m.d), expected);
+  }
+  for (const c of constraints) {
+    if (!base.constraintResiduals.has(c.id)) continue;
+    const others = constraints.filter((x) => x.id !== c.id);
+    const without = solveGarden(points, measurements, others);
+    // How badly the tape alone breaks this assumption, once nothing enforces it.
+    consider('constraint', c.id, without, residualOf(c, without.coords) ?? 0, null);
+  }
+  return out.sort((x, y) => y.explains - x.explains).slice(0, limit);
+}
+
+/** A constraint's residual (meters, as the adjustment measures it) at the given coordinates. */
+function residualOf(c: SolveConstraint, coords: Map<string, XY>): number | null {
+  if (c.points.some((id) => !coords.has(id))) return null;
+  const seg = (a: string, b: string): XY => {
+    const pa = coords.get(a)!;
+    const pb = coords.get(b)!;
+    return { x: pb.x - pa.x, y: pb.y - pa.y };
+  };
+  const len = (v: XY) => Math.hypot(v.x, v.y);
+  if (c.kind === 'right-angle') {
+    const [at, from, to] = c.points;
+    const u = seg(at, from);
+    const v = seg(at, to);
+    return Math.abs((u.x * v.x + u.y * v.y) / Math.max(len(u), len(v), EPS));
+  }
+  if (c.kind === 'parallel') {
+    const [a1, a2, b1, b2] = c.points;
+    const u = seg(a1, a2);
+    const v = seg(b1, b2);
+    return Math.abs(((u.x * v.y - u.y * v.x) / Math.max(len(u) * len(v), EPS)) * Math.min(len(u), len(v)));
+  }
+  if (c.kind === 'equal-length') {
+    const [a1, a2, b1, b2] = c.points;
+    return Math.abs(len(seg(a1, a2)) - len(seg(b1, b2)));
+  }
+  const ends = [c.points[0]!, c.points[c.points.length - 1]!] as const;
+  let worst = 0;
+  for (const mid of c.points.slice(1, -1)) {
+    const u = seg(ends[0], ends[1]);
+    const w = seg(ends[0], mid);
+    worst = Math.max(worst, Math.abs((u.x * w.y - u.y * w.x) / Math.max(len(u), EPS)));
+  }
+  return worst;
+}
