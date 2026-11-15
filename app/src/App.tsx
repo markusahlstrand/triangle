@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ApiError,
   LOGIN_URL,
-  LOGOUT_URL,
-  acceptInvite,
+  LINKS,
   api,
   downloadDxf,
   fetchSession,
   principal,
+  redeemLink,
   setPrincipal,
   type MirrorChoice,
   type Session,
@@ -22,8 +22,12 @@ import {
   FeatureSheet,
   MirrorSheet,
   PlantSheet,
+  ErrorNote,
+  Guide,
   PointDetailSheet,
+  RemoveButton,
   Sheet,
+  valueOf,
   constraintLabel,
   useAction,
 } from './Sheets';
@@ -81,29 +85,31 @@ export default function App() {
     }
   }, []);
 
-  // Resolve the session once. An `?invite=` token is stashed and stripped from
-  // the URL first (it survives the round-trip to the issuer via localStorage),
-  // then claimed as soon as we are back signed in — a 401 keeps it for after
+  // Resolve the session once. An `?invite=` or `?claim=` token is stashed and stripped
+  // from the URL first (it survives the round-trip to the issuer via localStorage),
+  // then redeemed as soon as we are back signed in — a 401 keeps it for after
   // sign-in; any other failure discards it so a dead token can't loop.
   useEffect(() => {
     const url = new URL(window.location.href);
-    const invite = url.searchParams.get('invite');
-    if (invite) {
-      localStorage.setItem('triangle-invite', invite);
-      url.searchParams.delete('invite');
+    for (const link of Object.values(LINKS)) {
+      const token = url.searchParams.get(link.param);
+      if (!token) continue;
+      localStorage.setItem(link.storageKey, token);
+      url.searchParams.delete(link.param);
       window.history.replaceState(null, '', url.pathname + (url.search || ''));
     }
     void (async () => {
       let s = await fetchSession();
-      const token = localStorage.getItem('triangle-invite');
-      if (token && s.kind !== 'dev') {
+      for (const link of Object.values(LINKS)) {
+        const token = localStorage.getItem(link.storageKey);
+        if (!token || s.kind === 'dev') continue;
         try {
-          await acceptInvite(token);
-          localStorage.removeItem('triangle-invite');
+          await redeemLink(link.path, token);
+          localStorage.removeItem(link.storageKey);
           s = await fetchSession();
         } catch (e) {
           if (e instanceof ApiError && e.status !== 401) {
-            localStorage.removeItem('triangle-invite');
+            localStorage.removeItem(link.storageKey);
             setError(e.message);
           }
         }
@@ -131,39 +137,45 @@ export default function App() {
       <div className="topbar">
         <div className="logo" />
         <div className="title">Triangle</div>
-        {readOnly && <span className="viewing-badge">VIEWING</span>}
+        {readOnly && (
+          <wa-badge variant="brand" appearance="outlined" class="viewing-badge">
+            VIEWING
+          </wa-badge>
+        )}
         {Object.keys(cast).length > 0 && (
-          <select value={who} onChange={(e) => switchPrincipal(e.target.value)}>
+          // The dev cast (local node server only): each entry is a real principal.
+          <wa-select class="cast" size="small" value={who} onChange={(e) => switchPrincipal(valueOf(e))}>
             {Object.entries(cast).map(([key, entry]) => (
-              <option key={key} value={key}>
+              <wa-option key={key} value={key}>
                 {entry.name} · {entry.role}
-              </option>
+              </wa-option>
             ))}
-          </select>
+          </wa-select>
         )}
         {session?.kind === 'user' && (
-          <span style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
-            <span className="meta">{session.me.display}</span>
-            <a className="hud-chip" href={LOGOUT_URL}>
-              Sign out
-            </a>
-          </span>
+          // Deployed: the account menu reads the same `/api/me` the shell does, and signs
+          // out through `/api/auth/logout`.
+          <sub-user-menu class="user-menu" show="avatar" />
         )}
       </div>
-      {error && <div className="error-bar">{error}</div>}
+      {error && <ErrorNote>{error}</ErrorNote>}
       {session?.kind === 'anonymous' && (
         <div className="screen">
           <div className="h1">Sign in</div>
           <div className="hint">
-            {session.needsSetup
+            {localStorage.getItem(LINKS.claim.storageKey)
+              ? 'Sign in with your team account to claim this garden as its owner.'
+              : session.needsSetup && session.firstSignInOpen
               ? 'This garden has just been set up — the first sign-in claims it as its owner.'
-              : localStorage.getItem('triangle-invite')
+              : session.needsSetup
+              ? 'This garden has no owner yet. Ask for a claim link from the dashboard, then open it here.'
+              : localStorage.getItem(LINKS.invite.storageKey)
                 ? 'Sign in with your team account to accept your invite to this garden.'
                 : 'Sign in with your team account to open this garden.'}
           </div>
-          <a className="btn" href={LOGIN_URL} style={{ textAlign: 'center', textDecoration: 'none' }}>
+          <wa-button variant="brand" size="large" href={LOGIN_URL}>
             Continue with sign-in
-          </a>
+          </wa-button>
         </div>
       )}
       {signedIn && !siteId && (
@@ -226,28 +238,31 @@ function Home(props: {
       )}
       {creating && (
         <Sheet title="New garden" onClose={() => setCreating(false)}>
-          {action.error && <div className="error-bar">{action.error}</div>}
-          <div className="field">
-            <div className="section-label">Garden name</div>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Casa Markus" autoFocus />
-          </div>
-          <div className="field">
-            <div className="section-label">Elevation datum</div>
-            <input value={datum} onChange={(e) => setDatum(e.target.value)} placeholder="Terrace floor = 0.00" />
-            <div className="hint">
-              Every elevation is measured against this. Pick something you can stand on and find
-              again.
-            </div>
-          </div>
-          <div className="callout">
-            <div className="tri" />
-            <div>
-              You'll place two points next. The line between them sets the orientation of the whole
-              map — pick a long, straight, permanent edge.
-            </div>
-          </div>
-          <button
-            className="btn"
+          {action.error && <ErrorNote>{action.error}</ErrorNote>}
+          <wa-input
+            label="Garden name"
+            size="large"
+            value={name}
+            onInput={(e) => setName(valueOf(e))}
+            placeholder="Casa Markus"
+            autofocus
+          />
+          <wa-input
+            label="Elevation datum"
+            size="large"
+            value={datum}
+            onInput={(e) => setDatum(valueOf(e))}
+            placeholder="Terrace floor = 0.00"
+            hint="Every elevation is measured against this. Pick something you can stand on and find again."
+          />
+          <Guide>
+            You'll place two points next. The line between them sets the orientation of the whole
+            map — pick a long, straight, permanent edge.
+          </Guide>
+          <wa-button
+            size="large"
+            variant="brand"
+            loading={action.busy}
             disabled={!name.trim() || action.busy}
             onClick={() =>
               void action.run(async () => {
@@ -262,7 +277,7 @@ function Home(props: {
             }
           >
             Continue
-          </button>
+          </wa-button>
         </Sheet>
       )}
     </div>
@@ -270,6 +285,15 @@ function Home(props: {
 }
 
 // ── Site view: Map / List (design 05–15) ─────────────────────────────────────
+
+const TABS = [
+  ['points', 'Points'],
+  ['measure', 'Measure'],
+  ['features', 'Features'],
+  ['plants', 'Plants'],
+  ['constraints', 'Constraints'],
+] as const;
+type Tab = (typeof TABS)[number][0];
 
 function SiteView(props: {
   site: SitePayload;
@@ -279,7 +303,7 @@ function SiteView(props: {
 }) {
   const { site, readOnly } = props;
   const [mode, setMode] = useState<'map' | 'list'>('map');
-  const [tab, setTab] = useState<'points' | 'measure' | 'features' | 'plants' | 'constraints'>('points');
+  const [tab, setTab] = useState<Tab>('points');
   const [overlays, setOverlays] = useState<Overlays>({ tape: false, elevations: true, canopies: true });
   const [sheet, setSheet] = useState<SheetState>({ kind: 'none' });
   const [selected, setSelected] = useState<string | null>(null);
@@ -296,20 +320,26 @@ function SiteView(props: {
   return (
     <>
       <div className="topbar" style={{ borderTop: 'none' }}>
-        <button onClick={props.onBack} style={{ fontSize: 20 }}>
-          ←
-        </button>
+        <wa-button appearance="plain" size="small" onClick={props.onBack}>
+          ←<span className="wa-visually-hidden"> Back to gardens</span>
+        </wa-button>
         <div style={{ font: '600 15px var(--sans)' }}>{site.site.name}</div>
-        <div className="toggle" style={{ marginLeft: 'auto' }}>
-          <button className={mode === 'map' ? 'active' : ''} onClick={() => setMode('map')}>
+        <wa-radio-group
+          class="toggle"
+          orientation="horizontal"
+          size="small"
+          value={mode}
+          onChange={(e) => setMode(valueOf(e) as 'map' | 'list')}
+        >
+          <wa-radio appearance="button" value="map">
             Map
-          </button>
-          <button className={mode === 'list' ? 'active' : ''} onClick={() => setMode('list')}>
+          </wa-radio>
+          <wa-radio appearance="button" value="list">
             List
-          </button>
-        </div>
+          </wa-radio>
+        </wa-radio-group>
       </div>
-      {action.error && <div className="error-bar">{action.error}</div>}
+      {action.error && <ErrorNote>{action.error}</ErrorNote>}
 
       {mode === 'map' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative' }}>
@@ -358,22 +388,22 @@ function SiteView(props: {
 
       {mode === 'list' && (
         <div className="screen">
-          <div className="tabs">
-            {(
-              [
-                ['points', 'Points'],
-                ['measure', 'Measure'],
-                ['features', 'Features'],
-                ['plants', 'Plants'],
-                ['constraints', 'Constraints'],
-              ] as const
-            ).map(([key, label]) => (
-              <button key={key} className={tab === key ? 'active' : ''} onClick={() => setTab(key)}>
+          <wa-tab-group
+            class="tabs"
+            active={tab}
+            onwa-tab-show={(e: CustomEvent<{ name: String }>) => {
+              if (e.target === e.currentTarget) setTab(String(e.detail.name) as Tab);
+            }}
+          >
+            {TABS.map(([key, label]) => (
+              <wa-tab key={key} slot="nav" panel={key}>
                 {label}
-              </button>
+              </wa-tab>
             ))}
-          </div>
-
+            {TABS.map(([key]) => (
+              <wa-tab-panel key={key} name={key}>
+                {/* Only the open tab draws its rows. */}
+                {tab === key && <div className="tab-body">
           {tab === 'points' && (
             <PointsTab site={site} readOnly={readOnly} onOpen={(id) => setSheet({ kind: 'point', id })} onAdd={() => setSheet({ kind: 'add-point' })} />
           )}
@@ -408,12 +438,11 @@ function SiteView(props: {
                   <span className="right">
                     at {byId.get(pl.point_id)?.name} · ⌀{pl.species.mature_canopy_m ?? '?'} m
                     {!readOnly && (
-                      <button
-                        style={{ marginLeft: 10, color: 'var(--bad)' }}
+                      <RemoveButton
+                        what={pl.label ?? pl.species.common_name}
+                        disabled={action.busy}
                         onClick={() => void action.run(() => api.removePlant({ plantId: pl.id }))}
-                      >
-                        ✕
-                      </button>
+                      />
                     )}
                   </span>
                 </div>
@@ -436,12 +465,11 @@ function SiteView(props: {
                     <span className="right">
                       {r !== undefined ? `${r.toFixed(1)} cm` : '—'}
                       {!readOnly && (
-                        <button
-                          style={{ marginLeft: 10, color: 'var(--bad)' }}
+                        <RemoveButton
+                          what={constraintLabel(c, site)}
+                          disabled={action.busy}
                           onClick={() => void action.run(() => api.deleteConstraint({ constraintId: c.id }))}
-                        >
-                          ✕
-                        </button>
+                        />
                       )}
                     </span>
                   </div>
@@ -458,6 +486,10 @@ function SiteView(props: {
               )}
             </>
           )}
+                </div>}
+              </wa-tab-panel>
+            ))}
+          </wa-tab-group>
         </div>
       )}
 
@@ -561,7 +593,7 @@ function MeasureTab(props: {
 
   return (
     <>
-      {action.error && <div className="error-bar">{action.error}</div>}
+      {action.error && <ErrorNote>{action.error}</ErrorNote>}
       {sorted.map((m) => {
         const r = site.solve.measurementResidualsCm[m.id];
         return (
@@ -574,12 +606,11 @@ function MeasureTab(props: {
               {Math.round(m.distance_m * 100)}
               {r !== undefined ? ` · ${r.toFixed(1)} cm` : ''}
               {!props.readOnly && (
-                <button
-                  style={{ marginLeft: 10, color: 'var(--bad)' }}
+                <RemoveButton
+                  what={`${byId.get(m.point_a)?.name} → ${byId.get(m.point_b)?.name}`}
+                  disabled={action.busy}
                   onClick={() => void action.run(() => api.deleteMeasurement({ measurementId: m.id }))}
-                >
-                  ✕
-                </button>
+                />
               )}
             </span>
           </div>

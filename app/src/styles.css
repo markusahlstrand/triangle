@@ -20,9 +20,14 @@
 }
 
 * {
+  box-sizing: border-box;
+}
+/* The reset stays off custom elements: a page rule beats a component's own :host
+   styles, so `* { padding: 0 }` would strip Web Awesome's buttons and radios. */
+html, body, div, span, p, a, h1, h2, h3, ul, ol, li, button, input, select,
+details, summary, svg, label {
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
 html,
@@ -46,12 +51,6 @@ button {
   cursor: pointer;
   color: inherit;
   -webkit-tap-highlight-color: transparent;
-}
-
-input,
-select {
-  font-family: var(--sans);
-  font-size: 17px;
 }
 
 .app {
@@ -82,20 +81,16 @@ select {
   font: 700 18px var(--sans);
   letter-spacing: -0.02em;
 }
-.topbar select {
+/* The account menu and the dev cast sit at the top bar's far end. */
+.topbar .cast,
+.topbar .user-menu {
   margin-left: auto;
-  border: 1px solid var(--border);
-  background: var(--white);
-  padding: 8px 10px;
-  font: 500 13px var(--sans);
 }
-
+.topbar .cast {
+  width: 15rem;
+}
 .viewing-badge {
-  font: 500 10px var(--mono);
-  color: var(--accent-dark);
-  background: var(--accent-bg);
-  border: 1px solid var(--accent-border);
-  padding: 2px 6px;
+  font-family: var(--mono);
 }
 
 /* ── Cards & lists ── */
@@ -187,74 +182,6 @@ select {
   border-color: var(--ink);
 }
 
-/* ── Primary button / bottom bar ── */
-.bottombar {
-  position: sticky;
-  bottom: 0;
-  padding: 10px 14px 18px;
-  background: linear-gradient(transparent, var(--bg) 30%);
-  display: flex;
-  gap: 10px;
-}
-.btn {
-  height: 52px;
-  background: var(--accent);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font: 600 16px var(--sans);
-  flex: 1;
-}
-.btn:disabled {
-  opacity: 0.4;
-}
-.btn.secondary {
-  background: var(--white);
-  color: var(--body);
-  border: 1px solid var(--border);
-}
-.btn.danger {
-  background: var(--white);
-  color: var(--bad);
-  border: 1px solid var(--border);
-}
-
-/* ── Map/List toggle ── */
-.toggle {
-  display: flex;
-  border: 1px solid var(--border);
-  background: var(--white);
-}
-.toggle button {
-  padding: 8px 18px;
-  font: 600 13px var(--sans);
-  color: var(--muted);
-}
-.toggle button.active {
-  background: var(--ink);
-  color: var(--white);
-}
-
-.tabs {
-  display: flex;
-  gap: 4px;
-  overflow-x: auto;
-}
-.tabs button {
-  padding: 8px 14px;
-  font: 600 13px var(--sans);
-  color: var(--muted);
-  border: 1px solid var(--border);
-  background: var(--white);
-  white-space: nowrap;
-}
-.tabs button.active {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--white);
-}
-
 /* ── Map ── */
 .map-wrap {
   position: relative;
@@ -316,90 +243,109 @@ select {
   gap: 8px;
 }
 
-/* ── Sheets (modals) ── */
-.sheet-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgb(23 22 26 / 0.35);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 40;
+/* ── Sheets: a Web Awesome dialog, dressed as the handover's bottom sheet ── */
+wa-dialog.sheet {
+  --width: min(480px, 100%);
+  --spacing: 16px;
 }
-.sheet {
-  background: var(--card);
-  border: 1px solid var(--border);
-  width: min(480px, 100%);
+wa-dialog.sheet::part(dialog) {
+  /* Anchored to the bottom edge, like the handover's sheet, rather than centred. */
+  margin-block-end: 0;
   max-height: 92dvh;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-}
-.sheet-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border-soft);
-  position: sticky;
-  top: 0;
+  border: 1px solid var(--border);
   background: var(--card);
-  z-index: 1;
 }
-.sheet-head .t {
+wa-dialog.sheet::part(header) {
+  border-bottom: 1px solid var(--border-soft);
+  padding-block: 14px;
+}
+wa-dialog.sheet::part(title) {
   font: 600 15px var(--sans);
 }
-.sheet-head .x {
-  margin-left: auto;
-  font: 400 20px var(--sans);
-  color: var(--body);
-  padding: 4px 8px;
-}
 .sheet-body {
-  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
+/* Field labels read as the handover's small uppercase section labels. */
+wa-input::part(label),
+wa-select::part(label),
+wa-textarea::part(label) {
+  font: 600 10px var(--sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
 .field {
   display: flex;
   flex-direction: column;
   gap: 7px;
 }
-.field input,
-.field select {
-  height: 52px;
-  background: var(--white);
-  border: 1px solid var(--border);
-  padding: 0 13px;
-  font: 500 17px var(--sans);
-  width: 100%;
-}
-.field input:focus,
-.field select:focus {
-  outline: none;
-  border-color: var(--ink);
-}
 .hint {
   font: 400 13px/1.45 var(--sans);
   color: var(--muted);
 }
-.callout {
-  background: #f2eee6;
-  border: 1px solid var(--border-soft);
-  padding: 13px;
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* A row of buttons that share the width — Save & next | Save. */
+.actions {
   display: flex;
   gap: 10px;
-  font: 400 13px/1.5 var(--sans);
-  color: var(--body);
 }
-.callout .tri {
+.actions > wa-button {
+  flex: 1;
+}
+/* An input with its button beside it — Elevation [Set]. */
+.inline-field {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.inline-field > wa-input {
+  flex: 1;
+}
+wa-input::part(hint),
+wa-select::part(hint),
+wa-switch::part(hint) {
+  font: 400 13px/1.45 var(--sans);
+  color: var(--muted);
+}
+wa-button.change {
+  align-self: flex-start;
+}
+/* The Triangle mark, as a callout's icon. */
+.tri {
   width: 20px;
   height: 20px;
   flex: none;
   background: var(--accent);
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+/* ── Map / List and the list tabs ── */
+.topbar .toggle {
+  margin-left: auto;
+}
+wa-tab-group.tabs::part(base) {
+  gap: 12px;
+}
+wa-tab-group.tabs wa-tab-panel {
+  --padding: 0;
+}
+.tab-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── History (an entity's events, a <sub-entity-table>) ── */
+.history summary {
+  cursor: pointer;
+  margin-bottom: 8px;
 }
 
 /* ── Keypad ── */
@@ -456,21 +402,6 @@ select {
 }
 .pill.selected .elev {
   color: rgb(255 255 255 / 0.7);
-}
-
-.error-bar {
-  background: #fbeae7;
-  border: 1px solid #f0c9c1;
-  color: var(--bad);
-  padding: 11px 13px;
-  font: 500 13px var(--sans);
-}
-.ok-bar {
-  background: #e8f4ec;
-  border: 1px solid #c6e2cf;
-  color: oklch(0.45 0.12 150);
-  padding: 11px 13px;
-  font: 500 13px var(--sans);
 }
 
 @media (min-width: 900px) {
