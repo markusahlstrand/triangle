@@ -490,3 +490,35 @@ wa-tab-group.tabs wa-tab-panel {
 .verified-tick {
   color: var(--good);
 }
+
+/* ── Assistant ── */
+.ask-ai {
+  margin-left: auto;
+}
+.assistant-drawer {
+  --size: min(480px, 100vw);
+}
+.assistant-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 8px;
+}
+.assistant-body sub-assistant {
+  flex: 1;
+  min-height: 0;
+}
+.assistant-empty {
+  color: var(--muted);
+  font-size: 14px;
+}
+.assistant-empty ul {
+  margin: 6px 0 0 18px;
+  list-style: disc;
+}
+.assistant-foot {
+  font-size: 12px;
+}
+.topbar .ask-ai + .toggle {
+  margin-left: 8px;
+}

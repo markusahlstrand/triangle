@@ -8,6 +8,10 @@ import { HTTPException } from 'hono/http-exception';
 import type { ScopeStub } from '@substrat-run/kernel';
 import type { PrincipalId } from '@substrat-run/contracts';
 import { mountApi } from './routes.js';
+import { mountAssistant } from './assistant.js';
+import { createModelHost } from '@substrat-run/vertical-host/model';
+import { createAnthropic } from '@ai-sdk/anthropic';
+import { gardenManifest } from './manifest.js';
 import { buildTriangleHost, seedTriangle, type TriangleWorld } from './seed.js';
 
 // ============================================================================
@@ -67,6 +71,29 @@ app.get('/api/cast', (c) =>
 // Every declared operation, /api/openapi.json, the MCP endpoint at /api/mcp, and
 // the error envelope. The checked-in `openapi.json` exists so a surface change
 // shows up in a PR diff — it is never what is served.
+// The survey assistant. Locally the model host reads this machine's environment: with an
+// ANTHROPIC_API_KEY it answers, without one the panel says no model is available.
+mountAssistant(app, {
+  stub,
+  models: () =>
+    createModelHost({
+      env: process.env as Record<string, string | undefined>,
+      factories: { anthropic: createAnthropic },
+      sent: 'The question and this garden survey',
+      record: (line) => console.log('model-usage', JSON.stringify(line)),
+    }),
+  attribution: (c) => {
+    const t2 = (c.req.query('tenant') ?? CAST[c.req.header('x-principal') ?? '']?.tenant) === 't2';
+    return {
+      tenant: t2 ? world.t2 : world.t1,
+      scope: t2 ? world.s2 : world.s1,
+      vertical: gardenManifest.id,
+      version: gardenManifest.version,
+      operation: 'garden/assistant',
+    };
+  },
+});
+
 const mounted = mountApi(app, stub);
 
 const PORT = Number(process.env.PORT ?? 8871);

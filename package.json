@@ -65,6 +65,7 @@
     "release": "pnpm test && pnpm typecheck && pnpm lint:boundaries && pnpm lint:generated && changeset version && substrat push --promote prod"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.142",
     "@hono/node-server": "^2.1.1",
     "@substrat-run/adapter-cloudflare": "^0.197.1",
     "@substrat-run/adapter-sqlite": "^0.197.1",

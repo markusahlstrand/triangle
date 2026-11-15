@@ -37,6 +37,7 @@ import {
 } from './Sheets';
 import type { Feature } from './api';
 import { MembersSheet } from './Members';
+import { AssistantDrawer } from './Assistant';
 import { closeSheet, gardenPath, navigate, useRoute } from './router';
 
 // ============================================================================
@@ -351,7 +352,9 @@ function SiteView(props: {
   // The view, the tab and the open sheet are all read off the URL; `setMode`, `setTab` and
   // `setSheet` below navigate. Only the mirror choice (a transient prompt) stays local.
   const mode: 'map' | 'list' = col === undefined || col === 'map' || route.query.get('on') === 'map' ? 'map' : 'list';
-  const tab: Tab = COLLECTION_TAB[col ?? ''] ?? 'points';
+  // `?on=` names the view under a panel that is not itself a tab (`/assistant?on=measurements`).
+  const tab: Tab = COLLECTION_TAB[col ?? ''] ?? COLLECTION_TAB[route.query.get('on') ?? ''] ?? 'points';
+  const askOpen = col === 'assistant';
   const [mirror, setMirror] = useState<MirrorChoice | null>(null);
   const sheet: SheetState = mirror
     ? { kind: 'mirror', choice: mirror }
@@ -433,6 +436,14 @@ function SiteView(props: {
           ←<span className="wa-visually-hidden"> Back to gardens</span>
         </wa-button>
         <div style={{ font: '600 15px var(--sans)' }}>{site.site.name}</div>
+        <wa-button
+          class="ask-ai"
+          size="small"
+          appearance="outlined"
+          onClick={() => navigate(`${base}/assistant?on=${mode === 'map' ? 'map' : TAB_COLLECTION[tab]}`, { sheet: true })}
+        >
+          Ask AI
+        </wa-button>
         <wa-radio-group
           class="toggle"
           orientation="horizontal"
@@ -642,6 +653,8 @@ function SiteView(props: {
           </wa-tab-group>
         </div>
       )}
+
+      {askOpen && <AssistantDrawer siteId={site.site.id} siteName={site.site.name} onClose={() => closeSheet(background)} />}
 
       {/* Sheets */}
       {sheet.kind === 'add-point' && <AddPointSheet site={site} onClose={close} onSaved={props.refresh} />}

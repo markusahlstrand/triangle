@@ -359,6 +359,16 @@ tab as its collection (`/gardens/:id/measurements`), a sheet as its resource (`/
 `/measurements/new?from=`, `?on=map` over the map), `/members`. Read view state off the route
 and navigate to change it — never a second copy in `useState`.
 
+**The survey assistant.** "Ask AI" opens `<sub-assistant>` in a drawer (`/gardens/:id/assistant`).
+It is HARNESS (`src/assistant.ts`, mounted on both hosts): `POST /api/assistant` reads the garden
+with `garden/get-site` AS THE CALLER (so `garden:read` gates it — no key of its own), puts the
+survey in the system prompt and runs the platform's model host
+(`createModelHost` from `@substrat-run/vertical-host/model`). The credential is the platform's —
+Triangle ships no provider key: Claude Sonnet 5 when the platform holds the Anthropic credential,
+else Workers AI through the `env.AI` binding every pushed vertical gets. Never call a model from
+module code (rule 2), and never add a provider key to the project. It reads; it changes nothing.
+Locally it answers only if this machine has `ANTHROPIC_API_KEY`; otherwise it says no model is available.
+
 **Run it.** `pnpm dev` starts the API (:8871, tsx watch) + the Vite app (:5174,
 proxies /api). `pnpm test` = solver unit tests + the scenario incl. denials + the
 served route table + model parity. `pnpm lint:boundaries` and `pnpm lint:generated`
