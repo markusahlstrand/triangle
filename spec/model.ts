@@ -200,6 +200,24 @@ export const solveReport = z.object({
   measurementResidualsCm: z.record(z.string(), z.number()),
   constraintResidualsCm: z.record(z.string(), z.number()),
   rmsCm: z.number(),
+  /**
+   * The observations most likely to be wrong, best first: leave each one out and re-solve,
+   * and the one whose absence lets the rest agree is the suspect. Empty while the survey
+   * agrees to within tape noise. Two with nearly equal `explains` mean the survey cannot
+   * tell them apart — tape another distance across the loop.
+   */
+  suspects: z.array(
+    z.object({
+      kind: z.enum(['measurement', 'constraint']),
+      id: z.string(),
+      /** What the rest of the survey says this distance is (measurements only). */
+      expectedCm: z.number().nullable(),
+      offByCm: z.number(),
+      /** Share of the survey's misfit that goes away without it, 0..1. */
+      explains: z.number(),
+      worstWithoutCm: z.number(),
+    }),
+  ),
 });
 
 /** The whole garden in one read — what the map and every list tab render from. */

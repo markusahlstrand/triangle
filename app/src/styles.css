@@ -465,3 +465,20 @@ wa-tab-group.tabs wa-tab-panel {
   border-color: var(--accent);
   z-index: 2;
 }
+
+/* ── Suspects ── */
+.suspects {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.suspects .suspect {
+  text-align: left;
+  color: var(--bad);
+}
+.suspects-tray {
+  top: 10px;
+  bottom: auto;
+  border-color: var(--bad);
+  z-index: 1;
+}

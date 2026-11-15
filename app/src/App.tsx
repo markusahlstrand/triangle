@@ -21,6 +21,7 @@ import {
   ConstraintSheet,
   FeatureSheet,
   MeasurementSheet,
+  SuspectsNote,
   MirrorSheet,
   PlantSheet,
   ErrorNote,
@@ -423,6 +424,11 @@ function SiteView(props: {
               + Measurement
             </button>
           )}
+          {!picking && site.solve.suspects.length > 0 && (
+            <div className="tray suspects-tray">
+              <SuspectsNote site={site} onOpenMeasurement={(id) => setSheet({ kind: 'measurement', id })} />
+            </div>
+          )}
           {pendingMirror && (
             <div className="tray" style={{ bottom: 74 }}>
               <div className="section-label">Which side?</div>
@@ -457,7 +463,13 @@ function SiteView(props: {
             <PointsTab site={site} readOnly={readOnly} onOpen={(id) => setSheet({ kind: 'point', id })} onAdd={() => setSheet({ kind: 'add-point' })} />
           )}
           {tab === 'measure' && (
-            <MeasureTab site={site} readOnly={readOnly} onAdd={() => setSheet({ kind: 'add-measurement' })} refresh={props.refresh} />
+            <MeasureTab
+              site={site}
+              readOnly={readOnly}
+              onAdd={() => setSheet({ kind: 'add-measurement' })}
+              onOpenMeasurement={(id) => setSheet({ kind: 'measurement', id })}
+              refresh={props.refresh}
+            />
           )}
           {tab === 'features' && (
             <>
@@ -650,6 +662,7 @@ function MeasureTab(props: {
   site: SitePayload;
   readOnly: boolean;
   onAdd: () => void;
+  onOpenMeasurement: (id: string) => void;
   refresh: () => Promise<void>;
 }) {
   const { site } = props;
@@ -659,6 +672,7 @@ function MeasureTab(props: {
 
   return (
     <>
+      <SuspectsNote site={site} onOpenMeasurement={props.onOpenMeasurement} />
       {action.error && <ErrorNote>{action.error}</ErrorNote>}
       {sorted.map((m) => {
         const r = site.solve.measurementResidualsCm[m.id];

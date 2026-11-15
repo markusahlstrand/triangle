@@ -1,11 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import {
   circleIntersection,
+  findSuspects,
   sideOf,
   solveGarden,
   type SolveConstraint,
   type SolveMeasurement,
   type SolvePoint,
+  type XY,
 } from '../src/geometry.js';
 
 // ============================================================================
@@ -179,5 +181,55 @@ describe('sideOf', () => {
   it('is the sign of the cross product against the anchor pair', () => {
     expect(sideOf({ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0.5, y: 1 })).toBe(1);
     expect(sideOf({ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0.5, y: -1 })).toBe(-1);
+  });
+});
+
+describe('findSuspects', () => {
+  // A 10 × 6 m rectangle A B C D with a stake E inside, every side, both diagonals and E to
+  // every corner taped: ten pulls for seven unknowns, so any one pull is checked by the rest.
+  const corners = { A: { x: 0, y: 0 }, B: { x: 10, y: 0 }, C: { x: 10, y: 6 }, D: { x: 0, y: 6 }, E: { x: 4, y: 2 } };
+  type K = keyof typeof corners;
+  const d = (c: Record<K, XY>, p: K, q: K) => Math.hypot(c[p].x - c[q].x, c[p].y - c[q].y);
+  const pts = [P('A'), P('B'), P('C', { side: 1 }), P('D', { side: 1 }), P('E', { side: 1 })];
+  const pairs = [
+    ['ab', 'A', 'B'], ['bc', 'B', 'C'], ['cd', 'C', 'D'], ['da', 'D', 'A'], ['ac', 'A', 'C'],
+    ['bd', 'B', 'D'], ['ea', 'E', 'A'], ['eb', 'E', 'B'], ['ec', 'E', 'C'], ['ed', 'E', 'D'],
+  ] as const;
+  const survey = (bad?: { id: string; by: number }, c: Record<K, XY> = corners, only = pairs.map((p) => p[0] as string)) =>
+    pairs.filter(([id]) => only.includes(id)).map(([id, a, b]) => M(id, a, b, d(c, a, b) + (bad?.id === id ? bad.by : 0)));
+
+  it('accuses nobody when the tape agrees', () => {
+    expect(findSuspects(pts, survey(), [])).toEqual([]);
+  });
+
+  it('names the one bad pull and what it should have read', () => {
+    const s = findSuspects(pts, survey({ id: 'ac', by: 0.25 }), []);
+    expect(s[0]).toMatchObject({ kind: 'measurement', id: 'ac' });
+    expect(s[0]!.expected!).toBeCloseTo(d(corners, 'A', 'C'), 2);
+    expect(s[0]!.offBy).toBeCloseTo(0.25, 2);
+    expect(s[0]!.worstWithout).toBeLessThan(0.005);
+    expect(s[0]!.explains - (s[1]?.explains ?? 0)).toBeGreaterThan(0.2);
+  });
+
+  it('blames the bad pull, not the right angle it bent', () => {
+    const square: SolveConstraint = { id: 'sq', kind: 'right-angle', points: ['A', 'B', 'D'] };
+    const s = findSuspects(pts, survey({ id: 'da', by: 0.3 }), [square]);
+    expect(s[0]).toMatchObject({ kind: 'measurement', id: 'da' });
+  });
+
+  it('blames a right angle the tape contradicts', () => {
+    // The tape is consistent, but the corner it describes is not square.
+    const skew = { ...corners, D: { x: 0.4, y: 6 }, C: { x: 10.4, y: 6 } };
+    const square: SolveConstraint = { id: 'sq', kind: 'right-angle', points: ['A', 'B', 'D'] };
+    const s = findSuspects(pts, survey(undefined, skew), [square]);
+    expect(s[0]).toMatchObject({ kind: 'constraint', id: 'sq' });
+  });
+
+  it('cannot tell which pull of a single loop is wrong — and says so by a tie', () => {
+    // Without E: six pulls, five unknowns. One spare pull catches the error but cannot place it.
+    const loop = ['ab', 'bc', 'cd', 'da', 'ac', 'bd'];
+    const s = findSuspects(pts.slice(0, 4), survey({ id: 'ac', by: 0.25 }, corners, loop), [], undefined, 6);
+    expect(s.length).toBeGreaterThan(1);
+    expect(s[0]!.explains - s[1]!.explains).toBeLessThan(0.05);
   });
 });

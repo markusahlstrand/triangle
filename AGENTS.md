@@ -292,7 +292,7 @@ else is derived from it.
 no kernel imports) triangulates: first point = origin, second = baseline on +x;
 a point with exactly two distances has two mirror candidates and waits for a
 **side choice** (`garden/choose-side`); a third distance auto-resolves and yields
-**residuals** (cm; green ≤ 2, amber ≤ 5, red above). **Constraints** (right-angle,
+**residuals** (cm; green ≤ 2, amber ≤ 5, red above). When the survey disagrees beyond tape noise, `findSuspects` leaves each measurement and constraint out in turn and re-solves; the one whose absence lets the rest agree is reported as `solve.suspects` (with what the rest says the distance is). Near-equal `explains` means the network has too few cross-checks to tell — the app says so and asks for another distance. **Constraints** (right-angle,
 parallel, equal-length, colinear) are assumptions with their own residuals — they
 enter the adjustment at HALF the weight of tape measurements, so the app never
 quietly bends real numbers to fit one; preview before apply (`garden/preview-constraint`).
