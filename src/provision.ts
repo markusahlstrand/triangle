@@ -4,7 +4,7 @@ import {
   type RoleDefinition,
 } from '@substrat-run/contracts';
 import { gardenModule } from './module.js';
-import { GARDEN_PERM } from './manifest.js';
+import { GARDEN_PERM, gardenManifest } from './manifest.js';
 
 // The manifest's config surface rides the same import `substrat push` already makes
 // for `permissions`: this export is what the push uploads, so `src/manifest.ts` is the
@@ -23,7 +23,7 @@ export { TRIANGLE_ENV as envSpec } from './manifest.js';
 export const MODULES = [gardenModule];
 
 /** Entitlements are default-deny: one SKU key per module this vertical runs. */
-export const ENTITLEMENT_KEYS = ['garden'];
+export const ENTITLEMENT_KEYS = [gardenManifest.entitlementKey];
 
 /**
  * The whole cast is two roles (concept §4/§6): the owner surveys and plans;

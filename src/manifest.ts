@@ -87,6 +87,6 @@ export const gardenManifest = moduleManifest.parse({
   ...manifestEntities(gardenEntities, {}),
   // The kernel-composed paged reads (`paged.over`) and the indexes behind them.
   lists: listsDeclaredBy(gardenOperations, gardenEntities),
-  entitlementKey: 'garden',
+  entitlementKey: 'triangle',
   envSpec: TRIANGLE_ENV,
 });
