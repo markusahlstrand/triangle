@@ -265,3 +265,26 @@ describe('findSuspects', () => {
     expect(s.measurementResiduals.get('ac2')!).toBeCloseTo(0.3, 2);
   });
 });
+
+describe('global start', () => {
+  // A baseline A–B and a rigid triangle P, Q, R held to it by three pulls, one from each corner:
+  // rigid as a whole, yet no corner has two PLACED neighbours when the incremental placement
+  // reaches it — the shape of a house tied to a garden baseline by three verified pulls.
+  const truth = { A: { x: 0, y: 0 }, B: { x: 10, y: 0 }, P: { x: 3, y: 5 }, Q: { x: 7, y: 6 }, R: { x: 5, y: 9 } };
+  type T = keyof typeof truth;
+  const t = (p: T, q: T) => Math.hypot(truth[p].x - truth[q].x, truth[p].y - truth[q].y);
+  // Three pulls hold the triangle, and one more (B–R) makes the shape unique: with exactly as
+  // many pulls as unknowns, a network can close in more than one shape.
+  const pairs: [T, T][] = [['A', 'B'], ['P', 'Q'], ['Q', 'R'], ['P', 'R'], ['A', 'P'], ['B', 'Q'], ['A', 'R'], ['B', 'R']];
+  const meas = pairs.map(([p, q]) => M(`${p}${q}`, p, q, t(p, q)));
+  const pts = [P('A'), P('B'), P('P'), P('Q'), P('R')];
+
+  it('places a rigid cluster no single point can be placed into', () => {
+    const r = solveGarden(pts, meas, []);
+    expect(r.placed.sort()).toEqual(['A', 'B', 'P', 'Q', 'R']);
+    // Every pull is met to within tape noise. (Where the shape itself is weakly determined —
+    // long, near-parallel pulls — tape noise allows it to sit a little off the truth; more
+    // cross distances, not more iterations, are what pin it.)
+    expect(Math.max(...r.measurementResiduals.values())).toBeLessThan(0.01);
+  });
+});

@@ -63,6 +63,10 @@ import { mountOwnerClaim } from '@substrat-run/vertical-auth/owner-claim-routes'
 import { mountSession } from '@substrat-run/vertical-auth/session-route';
 import { membersHook, mountInviteRoutes } from '@substrat-run/vertical-auth/invite-routes';
 import { mountApi } from './routes.js';
+import { mountAssistant } from './assistant.js';
+import { createModelHost } from '@substrat-run/vertical-host/model';
+import { createAnthropic } from '@ai-sdk/anthropic';
+import { gardenManifest } from './manifest.js';
 import { envSpec, MODULES, OWNER_ROLE_KEY, permissions, ROLES } from './provision.js';
 
 /** The scope-DO class = the app binary: kernel + engines + this vertical, bundled. */
@@ -128,6 +132,13 @@ interface Env {
   ROUTER_SECRET?: string;
   /** Shared secret the platform presents on /internal/* calls. */
   PLATFORM_SECRET?: string;
+  /**
+   * PLATFORM-held model credentials (#1054) — deployment-wide, never a per-install token.
+   * Read only by the model host, which reads each provider row's own variables.
+   */
+  ANTHROPIC_API_KEY?: string;
+  /** Workers AI, bound by the platform on every pushed vertical: a capability, not a secret. */
+  AI?: unknown;
 }
 
 /** The routed (tenant, scope) — from the router assertion, or the dev node. */
@@ -259,6 +270,30 @@ app.use(
 // surface below: Hono keeps only the last-registered `onError`, so the platform's
 // envelope wins for the whole app — harmless, because both are built on the same
 // `classifyError` (a denial is 403 on both).
+// The survey assistant (src/assistant.ts) — before the derived table, beside it on /api.
+mountAssistant(app, {
+  stub,
+  models: (c) =>
+    createModelHost({
+      env: c.env as unknown as Record<string, string | undefined>,
+      factories: { anthropic: createAnthropic },
+      ...(c.env.AI ? { aiBinding: c.env.AI } : {}),
+      sent: 'The question, the conversation so far, and this garden survey: point names, coordinates and tape distances',
+      // One usage line per call, in the invocation log — tokens as the provider reported them.
+      record: (line) => console.log(JSON.stringify({ event: 'model-usage', ...line })),
+    }),
+  attribution: (c) => {
+    const node = nodeFor(c.req.raw, c.env);
+    return {
+      tenant: node.tenantId,
+      scope: node.scopeId,
+      vertical: gardenManifest.id,
+      version: c.env.SUBSTRAT_VERSION_ID ?? gardenManifest.version,
+      operation: 'garden/assistant',
+    };
+  },
+});
+
 mountApi(app, stub);
 
 // The relying-party flow — `/login` → issuer → `/callback` → session cookie →

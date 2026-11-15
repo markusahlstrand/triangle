@@ -359,6 +359,28 @@ tab as its collection (`/gardens/:id/measurements`), a sheet as its resource (`/
 `/measurements/new?from=`, `?on=map` over the map), `/members`. Read view state off the route
 and navigate to change it — never a second copy in `useState`.
 
+**The survey assistant.** "Ask AI" opens `<sub-assistant>` in a drawer (`/gardens/:id/assistant`).
+It is HARNESS (`src/assistant.ts`, mounted on both hosts): `POST /api/assistant` reads the garden
+with `garden/get-site` AS THE CALLER (so `garden:read` gates it — no key of its own), puts the
+survey in the system prompt and runs the platform's model host
+(`createModelHost` from `@substrat-run/vertical-host/model`). The credential is the platform's —
+Triangle ships no provider key: Claude Sonnet 5 when the platform holds the Anthropic credential,
+else Workers AI through the `env.AI` binding every pushed vertical gets. Never call a model from
+module code (rule 2), and never add a provider key to the project. It reads; it changes nothing.
+⌘K / Ctrl-K opens it anywhere in a garden. It answers with TOOLS that compute rather than guess
+(`src/analysis.ts`, pure, over the solver): `impossible_measurements` (the triangle inequality over
+every taped triangle, ranked by how many triangles a pull breaks, never accusing a verified pull),
+`distance_range`, `what_if` (drop / re-read pulls, force a point onto its mirror side — nothing
+saved) and `typo_search` (a zero too many or too few, two digits swapped).
+
+**Editing as JSON.** "{ } Edit JSON" (`/gardens/:id/json`) shows the survey in the export's shape,
+editable. `app/src/surveyImport.ts` diffs the edited text against the garden and plans it as
+ordinary operations (create/update point, add/delete measurement, set-measurement-verified) — a
+preview first, then applied one operation at a time, each on the History. There is no bulk-write
+endpoint and no edit-measurement operation: a changed distance is delete + add. Points missing
+from the file are kept; constraints, features and plants are read-only there.
+Locally it answers only if this machine has `ANTHROPIC_API_KEY`; otherwise it says no model is available.
+
 **Run it.** `pnpm dev` starts the API (:8871, tsx watch) + the Vite app (:5174,
 proxies /api). `pnpm test` = solver unit tests + the scenario incl. denials + the
 served route table + model parity. `pnpm lint:boundaries` and `pnpm lint:generated`

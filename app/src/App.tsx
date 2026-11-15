@@ -37,6 +37,8 @@ import {
 } from './Sheets';
 import type { Feature } from './api';
 import { MembersSheet } from './Members';
+import { AssistantDrawer } from './Assistant';
+import { JsonSheet } from './JsonSheet';
 import { closeSheet, gardenPath, navigate, useRoute } from './router';
 
 // ============================================================================
@@ -351,7 +353,23 @@ function SiteView(props: {
   // The view, the tab and the open sheet are all read off the URL; `setMode`, `setTab` and
   // `setSheet` below navigate. Only the mirror choice (a transient prompt) stays local.
   const mode: 'map' | 'list' = col === undefined || col === 'map' || route.query.get('on') === 'map' ? 'map' : 'list';
-  const tab: Tab = COLLECTION_TAB[col ?? ''] ?? 'points';
+  // `?on=` names the view under a panel that is not itself a tab (`/assistant?on=measurements`).
+  const tab: Tab = COLLECTION_TAB[col ?? ''] ?? COLLECTION_TAB[route.query.get('on') ?? ''] ?? 'points';
+  const askOpen = col === 'assistant';
+  const jsonOpen = col === 'json';
+  const openAsk = () =>
+    navigate(`${base}/assistant?on=${mode === 'map' ? 'map' : TAB_COLLECTION[tab]}`, { sheet: true });
+  // ⌘K / Ctrl-K: the assistant, from anywhere in the garden. A key a component already handled
+  // (its own Enter, say) is left alone, as `<sub-assistant>` asks of a palette.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.key.toLowerCase() !== 'k' || !(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+      e.preventDefault();
+      if (!askOpen) openAsk();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
   const [mirror, setMirror] = useState<MirrorChoice | null>(null);
   const sheet: SheetState = mirror
     ? { kind: 'mirror', choice: mirror }
@@ -433,6 +451,15 @@ function SiteView(props: {
           ←<span className="wa-visually-hidden"> Back to gardens</span>
         </wa-button>
         <div style={{ font: '600 15px var(--sans)' }}>{site.site.name}</div>
+        <wa-button
+          class="ask-ai"
+          size="small"
+          appearance="outlined"
+          onClick={openAsk}
+          title="Ask AI (⌘K / Ctrl-K)"
+        >
+          Ask AI <kbd className="kbd">⌘K</kbd>
+        </wa-button>
         <wa-radio-group
           class="toggle"
           orientation="horizontal"
@@ -489,6 +516,9 @@ function SiteView(props: {
             </button>
             <button className="hud-chip" onClick={() => downloadSurveyJson(site)}>
               ⇩ JSON
+            </button>
+            <button className="hud-chip" onClick={() => navigate(`${base}/json?on=map`, { sheet: true })}>
+              {'{ }'} Edit JSON
             </button>
           </div>
           {picking && (
@@ -642,6 +672,11 @@ function SiteView(props: {
           </wa-tab-group>
         </div>
       )}
+
+      {jsonOpen && (
+        <JsonSheet site={site} readOnly={readOnly} onClose={() => closeSheet(background)} onApplied={props.refresh} />
+      )}
+      {askOpen && <AssistantDrawer siteId={site.site.id} siteName={site.site.name} onClose={() => closeSheet(background)} />}
 
       {/* Sheets */}
       {sheet.kind === 'add-point' && <AddPointSheet site={site} onClose={close} onSaved={props.refresh} />}

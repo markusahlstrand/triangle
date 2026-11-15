@@ -490,3 +490,74 @@ wa-tab-group.tabs wa-tab-panel {
 .verified-tick {
   color: var(--good);
 }
+
+/* ── Assistant ── */
+.ask-ai {
+  margin-left: auto;
+}
+.assistant-drawer {
+  --size: min(480px, 100vw);
+}
+.assistant-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 8px;
+}
+.assistant-body sub-assistant {
+  flex: 1;
+  min-height: 0;
+}
+.assistant-empty {
+  color: var(--muted);
+  font-size: 14px;
+}
+.assistant-empty ul {
+  margin: 6px 0 0 18px;
+  list-style: disc;
+}
+.assistant-foot {
+  font-size: 12px;
+}
+.topbar .ask-ai + .toggle {
+  margin-left: 8px;
+}
+.kbd {
+  font: 500 10px var(--mono);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 0 3px;
+  margin-left: 4px;
+}
+
+/* ── JSON editor ── */
+.json-editor {
+  width: 100%;
+  min-height: 40vh;
+  font: 12px/1.4 var(--mono);
+  border: 1px solid var(--border);
+  background: var(--white);
+  padding: 8px;
+  resize: vertical;
+}
+.file-pick input[type='file'] {
+  display: none;
+}
+.import-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.import-step {
+  font: 12px var(--mono);
+  padding: 2px 0;
+}
+.import-step.delete {
+  color: var(--bad);
+}
+.import-step.add {
+  color: var(--good);
+}
+.import-step.done {
+  opacity: 0.5;
+}

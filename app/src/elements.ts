@@ -12,9 +12,13 @@ import '@substrat-run/elements/controls';
 import '@awesome.me/webawesome/dist/components/tab-panel/tab-panel.js';
 import '@substrat-run/elements/user-menu';
 import '@substrat-run/elements/entity-table';
+import '@substrat-run/elements/assistant';
+// The assistant's side panel — free core, outside the curated list.
+import '@awesome.me/webawesome/dist/components/drawer/drawer.js';
 
 import type { DetailedHTMLProps, HTMLAttributes } from 'react';
 import type { SubEntityTable } from '@substrat-run/elements/entity-table';
+import type { SubAssistant } from '@substrat-run/elements/assistant';
 // Types every `wa-*` element for JSX.
 import type {} from '@substrat-run/elements/jsx';
 
@@ -26,6 +30,7 @@ declare module 'react' {
     interface IntrinsicElements {
       'sub-user-menu': SubProps<HTMLElement>;
       'sub-entity-table': SubProps<SubEntityTable>;
+      'sub-assistant': SubProps<SubAssistant>;
     }
   }
 }

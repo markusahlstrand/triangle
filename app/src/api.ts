@@ -57,8 +57,11 @@ export function setPrincipal(p: string): void {
  * `errorMessage` is left at its default: the problem+json envelope carries
  * `detail`, which the default already reads.
  */
+/** The persona header for a hand-written request — what the typed client sends on its own. */
+export const callerHeaders = (): Record<string, string> => ({ 'x-principal': currentPrincipal });
+
 export const api = createClient({
-  headers: () => ({ 'x-principal': currentPrincipal }),
+  headers: callerHeaders,
   fetch: (input, init) => fetch(input, { credentials: 'same-origin', ...init }),
 });
 
