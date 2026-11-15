@@ -292,7 +292,7 @@ else is derived from it.
 no kernel imports) triangulates: first point = origin, second = baseline on +x;
 a point with exactly two distances has two mirror candidates and waits for a
 **side choice** (`garden/choose-side`); a third distance auto-resolves and yields
-**residuals** (cm; green ≤ 2, amber ≤ 5, red above). When the survey disagrees beyond tape noise, `findSuspects` leaves each measurement and constraint out in turn and re-solves; the one whose absence lets the rest agree is reported as `solve.suspects` (with what the rest says the distance is). Near-equal `explains` means the network has too few cross-checks to tell — the app says so and asks for another distance. **Constraints** (right-angle,
+**residuals** (cm; green ≤ 2, amber ≤ 5, red above). When the survey disagrees beyond tape noise, `findSuspects` leaves each measurement and constraint out in turn and re-solves; the one whose absence lets the rest agree is reported as `solve.suspects` (with what the rest says the distance is). Near-equal `explains` means the network has too few cross-checks to tell — the app says so and asks for another distance. A pull the owner marks verified (`verified_at`, `garden/set-measurement-verified`) is never a suspect and weighs 4× in the adjustment; the search also tries flipping each point that sits on a chosen mirror side. **Constraints** (right-angle,
 parallel, equal-length, colinear) are assumptions with their own residuals — they
 enter the adjustment at HALF the weight of tape measurements, so the app never
 quietly bends real numbers to fit one; preview before apply (`garden/preview-constraint`).
@@ -306,7 +306,7 @@ elevation; curves sampled to polylines. SKP is a deliberate no.
 via `runSolve` and return what moved; nothing moves silently.
 
 **The model is the source (concept §8).** `spec/model.ts` declares eight entities and
-23 operations. From it: `src/manifest.ts` (permissions, events, entity relations,
+24 operations. From it: `src/manifest.ts` (permissions, events, entity relations,
 paged lists), `operationInputs` (the host parses every invocation), `operationConcurrency`
 (`If-Match` on `update-point` / `update-feature`), the route table on both hosts,
 the MCP endpoint at `/api/mcp` (`whoami` opts out), `/api/openapi.json` and
@@ -354,6 +354,10 @@ registered once in `app/src/elements.ts`: `<sub-user-menu>` in the deployed top 
 (styles.css `:root`), nothing else. The map, the tape keypad, the point picker and the
 residual squares are the handover's own and stay hand-drawn. Keep the CSS reset off custom
 elements: a page rule beats a component's `:host` style.
+Every view is a URL (`app/src/router.ts`, History API, no dependency): `/gardens/:id/map`, a list
+tab as its collection (`/gardens/:id/measurements`), a sheet as its resource (`/points/:id`,
+`/measurements/new?from=`, `?on=map` over the map), `/members`. Read view state off the route
+and navigate to change it — never a second copy in `useState`.
 
 **Run it.** `pnpm dev` starts the API (:8871, tsx watch) + the Vite app (:5174,
 proxies /api). `pnpm test` = solver unit tests + the scenario incl. denials + the

@@ -199,3 +199,65 @@ export const members = {
     }),
   revokeInvite: (principal: string) => call<void>(`/api/invites/${principal}/revoke`, { method: 'POST' }),
 };
+
+// ── JSON export: the whole survey, as numbers a person (or another tool) can read ──
+
+/**
+ * Every measurement, point and assumption of a garden as one JSON file, built from the same
+ * `get-site` read the map draws from — names beside ids, distances in cm, each pull with what
+ * the adjusted survey makes of it, and the solver's current suspects.
+ */
+export function surveyJson(site: SitePayload) {
+  const name = new Map(site.points.map((p) => [p.id, p.name]));
+  const r = (n: number) => Math.round(n * 1000) / 1000;
+  return {
+    garden: site.site.name,
+    datum: site.site.datum_note,
+    units: { distance: 'cm', coordinates: 'm', elevation: 'm' },
+    points: site.points.map((p) => ({
+      id: p.id,
+      name: p.name,
+      status: p.status,
+      x: p.x === null ? null : r(p.x),
+      y: p.y === null ? null : r(p.y),
+      elevation: p.elevation_m,
+      locked: p.locked === 1,
+      side: p.side,
+    })),
+    measurements: site.measurements.map((m) => ({
+      id: m.id,
+      from: name.get(m.point_a) ?? m.point_a,
+      to: name.get(m.point_b) ?? m.point_b,
+      fromId: m.point_a,
+      toId: m.point_b,
+      distanceCm: Math.round(m.distance_m * 1000) / 10,
+      residualCm: site.solve.measurementResidualsCm[m.id] ?? null,
+      verifiedAt: m.verified_at,
+      note: m.note,
+      measuredAt: m.created_at,
+    })),
+    constraints: site.constraints.map((c) => ({
+      id: c.id,
+      kind: c.kind,
+      points: c.points.map((id) => name.get(id) ?? id),
+      residualCm: site.solve.constraintResidualsCm[c.id] ?? null,
+    })),
+    features: site.features.map((f) => ({
+      name: f.name,
+      type: f.type,
+      closed: f.closed === 1,
+      points: f.vertices.map((v) => name.get(v.point_id) ?? v.point_id),
+    })),
+    solve: { rmsCm: site.solve.rmsCm, suspects: site.solve.suspects },
+  };
+}
+
+export function downloadSurveyJson(site: SitePayload): void {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(
+    new Blob([JSON.stringify(surveyJson(site), null, 2)], { type: 'application/json' }),
+  );
+  a.download = `${site.site.name.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '') || 'garden'}-survey.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}

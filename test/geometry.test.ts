@@ -232,4 +232,36 @@ describe('findSuspects', () => {
     expect(s.length).toBeGreaterThan(1);
     expect(s[0]!.explains - s[1]!.explains).toBeLessThan(0.05);
   });
+
+  it('never accuses a verified pull', () => {
+    const meas = survey({ id: 'ac', by: 0.25 }).map((m) => (m.id === 'ac' ? { ...m, verified: true } : m));
+    const s = findSuspects(pts, meas, []);
+    expect(s.map((x) => x.id)).not.toContain('ac');
+  });
+
+  it('heals a wrong side that meets an independent cross-check, and accuses nobody', () => {
+    // F and C are each fixed by two pulls (to A and B), so each side is a choice: F's was
+    // right, C's wrong. E is pulled to A, B, F and C — all true distances — and cannot agree
+    // with both F and a mirrored C. A wrong side only shows where it meets points placed
+    // independently of it; a point placed only from C would simply follow it into the mirror.
+    const truth = { A: { x: 0, y: 0 }, B: { x: 10, y: 0 }, F: { x: 2, y: 6 }, C: { x: 4, y: 3 }, E: { x: 7, y: 4 } };
+    type T = keyof typeof truth;
+    const t = (p: T, q: T) => Math.hypot(truth[p].x - truth[q].x, truth[p].y - truth[q].y);
+    const pairs: [T, T][] = [['A', 'B'], ['A', 'F'], ['B', 'F'], ['A', 'C'], ['B', 'C'], ['A', 'E'], ['B', 'E'], ['F', 'E'], ['C', 'E']];
+    const meas = pairs.map(([p, q]) => M(`${p}${q}`, p, q, t(p, q)));
+    const order = [P('A'), P('B'), P('F', { side: 1 }), P('C', { side: -1 }), P('E', { side: 1 })];
+    // The adjustment itself carries C back across A–B: a wrong side that meets an independent
+    // cross-check heals, and nothing — not a pull, not a side — is accused.
+    const r = solveGarden(order, meas, []);
+    expect(r.coords.get('C')!.y).toBeCloseTo(3, 3);
+    expect(findSuspects(order, meas, [])).toEqual([]);
+  });
+
+  it('lets a verified pull win over an unverified pull of the same pair', () => {
+    const meas = [...survey(), M('ac2', 'A', 'C', d(corners, 'A', 'C') + 0.3)];
+    const s = solveGarden(pts, meas.map((m) => (m.id === 'ac' ? { ...m, verified: true } : m)), []);
+    // The verified pull fits; the stray re-pull carries the whole disagreement.
+    expect(s.measurementResiduals.get('ac')!).toBeLessThan(0.002);
+    expect(s.measurementResiduals.get('ac2')!).toBeCloseTo(0.3, 2);
+  });
 });

@@ -151,6 +151,12 @@
           },
           "created_at": {
             "type": "string"
+          },
+          "verified_at": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -160,7 +166,8 @@
           "point_b",
           "distance_m",
           "note",
-          "created_at"
+          "created_at",
+          "verified_at"
         ],
         "additionalProperties": false
       },

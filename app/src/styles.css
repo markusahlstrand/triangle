@@ -482,3 +482,11 @@ wa-tab-group.tabs wa-tab-panel {
   border-color: var(--bad);
   z-index: 1;
 }
+
+.residual-off {
+  color: var(--muted);
+}
+
+.verified-tick {
+  color: var(--good);
+}
