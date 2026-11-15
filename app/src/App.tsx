@@ -355,6 +355,19 @@ function SiteView(props: {
   // `?on=` names the view under a panel that is not itself a tab (`/assistant?on=measurements`).
   const tab: Tab = COLLECTION_TAB[col ?? ''] ?? COLLECTION_TAB[route.query.get('on') ?? ''] ?? 'points';
   const askOpen = col === 'assistant';
+  const openAsk = () =>
+    navigate(`${base}/assistant?on=${mode === 'map' ? 'map' : TAB_COLLECTION[tab]}`, { sheet: true });
+  // ⌘K / Ctrl-K: the assistant, from anywhere in the garden. A key a component already handled
+  // (its own Enter, say) is left alone, as `<sub-assistant>` asks of a palette.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.key.toLowerCase() !== 'k' || !(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+      e.preventDefault();
+      if (!askOpen) openAsk();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
   const [mirror, setMirror] = useState<MirrorChoice | null>(null);
   const sheet: SheetState = mirror
     ? { kind: 'mirror', choice: mirror }
@@ -440,9 +453,10 @@ function SiteView(props: {
           class="ask-ai"
           size="small"
           appearance="outlined"
-          onClick={() => navigate(`${base}/assistant?on=${mode === 'map' ? 'map' : TAB_COLLECTION[tab]}`, { sheet: true })}
+          onClick={openAsk}
+          title="Ask AI (⌘K / Ctrl-K)"
         >
-          Ask AI
+          Ask AI <kbd className="kbd">⌘K</kbd>
         </wa-button>
         <wa-radio-group
           class="toggle"

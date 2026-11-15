@@ -2,7 +2,8 @@ import type { Context, Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import type { ScopeStub } from '@substrat-run/kernel';
 import { z } from '@substrat-run/contracts';
-import type { ModelAttribution, ModelHost, ModelMessage } from '@substrat-run/vertical-host/model';
+import type { ModelAttribution, ModelHost, ModelMessage, ModelTool } from '@substrat-run/vertical-host/model';
+import { distanceRange, impossiblePulls, surveyOf, typoSearch, whatIf, type Survey } from './analysis.js';
 import type { SitePayload } from './module.js';
 
 // ============================================================================
@@ -81,10 +82,14 @@ export function mountAssistant(app: Hono<any, any, any>, deps: AssistantDeps): v
       attribution: deps.attribution(c),
       system: systemPrompt(site),
       messages: messages as ModelMessage[],
-      maxOutputTokens: 1200,
+      tools: surveyTools(surveyOf(site)),
+      maxSteps: 6,
+      maxOutputTokens: 1500,
       temperature: 0.2,
     });
-    return c.json({ answer: run.text, model: run.label });
+    // What the model looked up on the way, for the transcript ("Checked 3 triangles…").
+    const used = run.steps.flatMap((step) => step.toolCalls.map((call) => TOOL_WORDS[call.tool] ?? call.tool));
+    return c.json({ answer: run.text, model: run.label, used });
   });
 }
 
@@ -147,6 +152,57 @@ export function surveyContext(site: SitePayload) {
   };
 }
 
+/** How the transcript says what a tool did. */
+const TOOL_WORDS: Record<string, string> = {
+  impossible_measurements: 'Checked every taped triangle for pulls that cannot be',
+  distance_range: 'Worked out the range a distance can take',
+  what_if: 'Re-solved the survey with a change',
+  typo_search: 'Tried every one-slip typo against the survey',
+};
+
+/**
+ * The analyses the model may run — each re-solves or measures the survey for real, so a claim
+ * like "the 987 cm pull is impossible" is computed, not guessed. All read-only: a what-if is
+ * never saved.
+ */
+function surveyTools(s: Survey): Record<string, ModelTool<any>> {
+  const ref = z.object({
+    id: z.string().optional().describe('measurement id from the survey JSON'),
+    from: z.string().optional().describe('point name at one end'),
+    to: z.string().optional().describe('point name at the other end'),
+  });
+  return {
+    impossible_measurements: {
+      description:
+        'Every fully taped triangle that cannot close (one side longer than the other two together, or shorter than their difference). Returns each impossible pull with the range it must lie in and why. Needs no redundancy — run it first when the survey disagrees badly.',
+      input: z.object({}),
+      execute: async () => impossiblePulls(s).slice(0, 12),
+    },
+    distance_range: {
+      description:
+        'The range the distance between two points can take, from every third point taped to both; plus what was taped and what the solved map says.',
+      input: z.object({ from: z.string(), to: z.string() }),
+      execute: async ({ from, to }: { from: string; to: string }) => distanceRange(s, from, to),
+    },
+    what_if: {
+      description:
+        'Re-solve with pulls dropped, pulls read as other values, and/or points forced to their mirror side; returns the misfit (rms) before and after, what is placed, and the worst pulls. Nothing is saved. Use it to test a hypothesis before recommending it.',
+      input: z.object({
+        drop: z.array(ref).optional(),
+        change: z.array(ref.extend({ cm: z.number().positive() })).optional(),
+        flip: z.array(z.string()).optional().describe('point names to mirror onto their other side'),
+      }),
+      execute: async (input: Parameters<typeof whatIf>[1]) => whatIf(s, input),
+    },
+    typo_search: {
+      description:
+        'Re-solve with each unverified pull read as each one-slip typo (a zero too many or too few, two digits swapped) and rank the readings that make the survey agree best. A real typo stands far ahead of the rest.',
+      input: z.object({}),
+      execute: async () => typoSearch(s),
+    },
+  };
+}
+
 function systemPrompt(site: SitePayload): string {
   return [
     'You are the survey assistant in Triangle, an app for measuring a garden with a 20 m tape.',
@@ -159,8 +215,12 @@ function systemPrompt(site: SitePayload): string {
     'Verified pulls were re-measured by the owner — trust them over unverified ones.',
     '',
     'Answer questions about this garden from the survey below. Be concrete: name the points and',
-    'the numbers. Distances between points can be computed from x/y (meters). When the data cannot',
-    'answer, say what to measure next. You cannot change anything; suggest what the person should do.',
+    'the numbers. You have tools that compute — impossible_measurements, distance_range, what_if,',
+    'typo_search. Use them before claiming a pull is wrong, a point is on the wrong side, or a value',
+    'is a typo, and quote what they returned. Think like a surveyor: a gross error usually shows as an',
+    'impossible triangle; many red residuals around one point usually come from ONE bad pull nearby.',
+    'When the data cannot settle it, say exactly what to measure next. You cannot change anything;',
+    'suggest what the person should do.',
     'Answer in the language the question is asked in. Plain text, no markdown tables.',
     '',
     'SURVEY (JSON):',

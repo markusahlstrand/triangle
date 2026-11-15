@@ -522,3 +522,10 @@ wa-tab-group.tabs wa-tab-panel {
 .topbar .ask-ai + .toggle {
   margin-left: 8px;
 }
+.kbd {
+  font: 500 10px var(--mono);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 0 3px;
+  margin-left: 4px;
+}

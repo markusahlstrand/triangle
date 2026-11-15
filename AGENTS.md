@@ -367,6 +367,11 @@ survey in the system prompt and runs the platform's model host
 Triangle ships no provider key: Claude Sonnet 5 when the platform holds the Anthropic credential,
 else Workers AI through the `env.AI` binding every pushed vertical gets. Never call a model from
 module code (rule 2), and never add a provider key to the project. It reads; it changes nothing.
+⌘K / Ctrl-K opens it anywhere in a garden. It answers with TOOLS that compute rather than guess
+(`src/analysis.ts`, pure, over the solver): `impossible_measurements` (the triangle inequality over
+every taped triangle, ranked by how many triangles a pull breaks, never accusing a verified pull),
+`distance_range`, `what_if` (drop / re-read pulls, force a point onto its mirror side — nothing
+saved) and `typo_search` (a zero too many or too few, two digits swapped).
 Locally it answers only if this machine has `ANTHROPIC_API_KEY`; otherwise it says no model is available.
 
 **Run it.** `pnpm dev` starts the API (:8871, tsx watch) + the Vite app (:5174,

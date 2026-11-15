@@ -36,7 +36,7 @@ const fakeModels: ModelHost = {
     }) as unknown as ReturnType<ModelHost['status']>,
   run: async (request) => {
     asked.push(request);
-    return { text: 'Measure from the pillar to the pool corner.', label: `fake/${request.spec}` } as Awaited<
+    return { text: 'Measure from the pillar to the pool corner.', label: `fake/${request.spec}`, steps: [] } as unknown as Awaited<
       ReturnType<ModelHost['run']>
     >;
   },
@@ -86,7 +86,7 @@ describe('the survey assistant', () => {
     asked = [];
     const res = await ask('vera', question());
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ answer: 'Measure from the pillar to the pool corner.', model: `fake/${ASSISTANT_MODELS[0]}` });
+    expect(await res.json()).toEqual({ answer: 'Measure from the pillar to the pool corner.', model: `fake/${ASSISTANT_MODELS[0]}`, used: [] });
     expect(asked).toHaveLength(1);
     expect(asked[0]!.spec).toBe(ASSISTANT_MODELS[0]);
     expect(asked[0]!.system).toContain('Casa Markus');

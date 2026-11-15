@@ -25,8 +25,15 @@ function sourceFor(siteId: string): AssistantSource {
           ],
         }),
       });
-      const body = (await res.json().catch(() => ({}))) as { answer?: string; detail?: string; error?: string };
+      const body = (await res.json().catch(() => ({}))) as {
+        answer?: string;
+        used?: string[];
+        detail?: string;
+        error?: string;
+      };
       if (!res.ok) throw new ApiError(res.status, body.detail ?? body.error ?? res.statusText, body);
+      // What it computed on the way — one quiet line each, before the answer.
+      for (const text of body.used ?? []) yield { t: 'host-event', kind: 'read', text };
       yield { t: 'text-delta', pid: 'answer', delta: body.answer ?? '' };
       yield { t: 'turn-finish', reason: 'done' };
     },
@@ -52,6 +59,9 @@ export function AssistantDrawer(props: { siteId: string; siteName: string; onClo
 
   useEffect(() => {
     if (el.current) el.current.model = conversationFor(props.siteId);
+    // Opened from ⌘K / Ctrl-K: the cursor belongs in the question box.
+    const t = setTimeout(() => el.current?.focus(), 150);
+    return () => clearTimeout(t);
   }, [props.siteId]);
   useEffect(() => {
     void fetch('/api/assistant', { headers: callerHeaders() })
@@ -81,12 +91,17 @@ export function AssistantDrawer(props: { siteId: string; siteName: string; onClo
           placeholder="Ask about your measurements…"
         >
           <div slot="empty" className="assistant-empty">
-            <p>Ask about this garden's survey — the AI sees every point, tape pull and residual.</p>
+            <p>
+              Ask about this garden's survey. The AI sees every point, tape pull and residual, and can
+              check impossible triangles, test what-ifs and look for typos before it answers.
+            </p>
             <ul>
               <li>Which measurement is probably wrong?</li>
-              <li>How far is it from the olive to the pool?</li>
+              <li>What if the pillar to the pool is 369 cm?</li>
+              <li>Is Pool NW corner on the wrong side?</li>
               <li>What should I measure next?</li>
             </ul>
+            <p className="hint">⌘K / Ctrl-K opens this from anywhere in the garden.</p>
           </div>
         </sub-assistant>
         <div className="hint assistant-foot">
