@@ -43,7 +43,7 @@ spec/concept.md        the concept as built — the human half           ← doc
 spec/model.ts          defineEntities + defineOperations (http, paged…)  ← module code
 src/manifest.ts        moduleManifest, assembled from the model          ← module code
 src/migrations.ts      the SqlMigration[] (append-only)                  ← module code
-src/module.ts          handlers `satisfies` the model; registration      ← module code
+src/module.ts          handlers bound by `operationsFor(model)`          ← module code
 src/provision.ts       MODULES, ROLES, grant shapes — node-free           ← module code
 src/geometry.ts        the solver (pure)                                  ← module code
 src/dxf.ts             the DXF writer (pure)                              ← module code
@@ -52,11 +52,13 @@ src/api.ts             the OpenAPI document, from the model               ← ha
 src/seed.ts            host, tenants, demo cast, seed world               ← harness
 src/server.ts          the dev entrypoint (node + persona header)         ← harness
 src/worker.ts          the deployable Cloudflare worker + the auth seam   ← harness
-tools/emit.mts         renders app/src/api.generated.ts + openapi.json    ← harness
+tools/emit.mts         renders api.generated.ts, openapi.json, model.json ← harness
 app/                   the React SPA (npm); api.generated.ts is emitted
 test/scenario.test.ts  the scenario — including the denials
 test/server.test.ts    the derived route table, served (401/403/400/404)
 test/model.test.ts     the model's fields == the journal's columns
+test/setup.ts          the 50-byte LIKE/GLOB pattern limit, on by default (vitest setupFiles)
+test/sql-limits.test.ts  proves the setupFiles wiring itself
 ```
 
 **A route is not written; it is declared.** An operation in `spec/model.ts` that
@@ -66,7 +68,11 @@ SPA client, all in that one change. Never add a Hono route for an operation to a
 entrypoint or to `routes.ts`: it would exist on one host and 404 on the other, and
 the scenario tests would never notice. What an entrypoint may still own is only what
 is genuinely its own — building a host, resolving a caller, and its auth-shaped
-routes (`/api/cast` in dev; `/api/auth/*`, `/api/me`, invites in the worker). After
+routes (`/api/cast` in dev; `/api/auth/*`, `/api/me`, invites, `/api/claim-owner` in
+the worker). An operation whose handler the model already describes completely (a plain
+paged list, a create) must say who writes it: `derive: '<shape>'` and no handler, or
+`authored: '<why the derived one is wrong here>'` — `defineOperations` refuses it at load
+otherwise. After
 changing the model run `pnpm emit`; `pnpm lint:generated` fails on drift.
 
 `provision.ts` is deliberately node-free: both hosts register from it (the dev
@@ -77,9 +83,12 @@ modules defined anywhere else will run locally and silently not deploy.
 `mountPlatformSurface` from `@substrat-run/vertical-host` (one call — the routes
 and the error envelope are authored there, not here, so they can't drift or ship
 half-done). What `worker.ts` still owns is **the auth seam**: Triangle is a pure OIDC
-relying party (`@substrat-run/vertical-auth`), and the `x-principal` dev header is
-honoured only behind `ALLOW_DEV_HEADER`, which is never set in prod — deploying with
-it set is a cross-tenant hole with a UI.
+relying party (`@substrat-run/vertical-auth`: `instanceAuthFor`, `mountSession`,
+`mountInviteRoutes`, `mountOwnerClaim`). The worker honours **no** `x-principal` header —
+a verified login is the only way in, in every environment. `ALLOW_DEV_NODE` (local
+`wrangler dev` only, never set in prod) supplies an *address* for an un-routed request
+and authenticates nobody. Both hosts pass `permissions` to their scope host: a module the
+declared surface leaves out is refused at registration.
 
 **A UI ships as declared assets.** If `app/` exists, `substrat.runtimeNeeds.assets` must
 point at its build output and `runtimeNeeds.build` must produce it — otherwise the deployed
@@ -94,14 +103,16 @@ hook answers **501** to that call for its whole life — the setting is saved, t
 dashboard reports `delivered: false`, and the app never sees it. That includes the
 `substrat:auth` issuer choice, i.e. the difference between a working login and
 401-on-everything. Triangle stores deliveries in the tenant's `IdentityDO` and reads
-them back per request in `authWiringFor`. Read settings that way and never off `env`
-directly: an `envSpec` default rides as a worker binding shared by every install of
-one serving script, so `env.FOO` is the same string for every tenant.
+them back per request in `authWiringFor` (`instanceAuthFor`). Read settings that way and
+never off `env` directly: an `envSpec` default rides as a worker binding shared by every
+install of one serving script, so `env.FOO` is the same string for every tenant. Declare
+a setting once, in `src/manifest.ts` (`TRIANGLE_ENV`) — `src/provision.ts` re-exports it
+as `envSpec`, which is what `substrat push` uploads.
 
 ## The rules (non-negotiable)
 
 **Module code** = everything reachable from a `ModuleRegistration` (operations,
-consumers). Rules 1–5 are enforced mechanically by `boundary-lint`.
+consumers). Rules 1–5 and 12 are enforced mechanically by `boundary-lint`.
 
 1. **Data access is `ctx.sql` only.** Never import `better-sqlite3`, an adapter,
    `node:*`, or `cloudflare:workers` in module code. That last one is not a style rule:
@@ -119,10 +130,12 @@ consumers). Rules 1–5 are enforced mechanically by `boundary-lint`.
    `@substrat-run/kernel` rather than a `SELECT` of your own: both take an `EntityRef`,
    page like a list read, and decode the envelope for you. `readHistory` also returns the
    payload, the authorization chain (which checks the operation passed, and under which
-   grant), the impersonation stamp and the PII class. On the first three, a `null` is a
-   *fact* rather than data you failed to fetch — the payload was erased, the row predates
-   authorization recording, nobody was impersonating — so render it as that. Neither
-   helper checks a permission; you do, before you call it.
+   grant), the impersonation stamp, the PII class, the `operation` the event was emitted
+   from and the `version` the emitting code was deployed as. On all but the PII class, a
+   `null` is a *fact* rather than data you failed to fetch — the payload was erased, the
+   row predates authorization recording, nobody was impersonating, a consumer emitted it,
+   no version identity was present — so render it as that. Neither helper checks a
+   permission; you do, before you call it.
 4. **Another module's tables are private.** Never `SELECT` from `workorder_*` etc. — use
    the engine's exported in-scope functions. This is the rule with no runtime equivalent:
    the shortcut *works* and silently welds you to an engine's private schema forever. Need
@@ -143,15 +156,19 @@ consumers). Rules 1–5 are enforced mechanically by `boundary-lint`.
    (`moneyOf`, `mulMoney`, `addDecimal`, `compareDecimal`) — never floats.
 10. **Web-standard APIs always** — `globalThis.crypto`, `TextEncoder`, `URL`. Never
     hand-roll a hash to dodge an import ban.
-11. **Parse, don't trust** — and the **host** is what parses. A module passes
-    `operationInputs: operationInputsOf(ops)` beside its `operations`, and every invocation
-    is parsed against the declared schema before the guards and the handler, on every path
-    in (HTTP, test, seed, schedule). Handlers do not hand-parse; a declared input nobody
-    parses stops being possible rather than merely discouraged. Import `z` from
+11. **Parse, don't trust** — and the **host** is what parses. A module binds its
+    handlers with `operationsFor(ops)(…)`, which hands the host the declared schemas with
+    them, and every invocation is parsed against them before the guards and the handler,
+    on every path in (HTTP, test, seed, schedule). Handlers do not hand-parse; a declared
+    input nobody parses stops being possible rather than merely discouraged. Import `z` from
     `@substrat-run/contracts`, **never from `zod`**. Zod schemas don't compose across
     copies or majors; composing a contracts schema into one built from a separate `zod`
     fails at *runtime* (`expected a Zod schema`) with an error pointing nowhere near the
     cause.
+12. **A CSV is written by `csvTable(header, rows)`** from `@substrat-run/contracts`, never
+    by joining cells with `','`. Spreadsheets run a cell starting with `=`, `+`, `-` or `@`
+    as a formula even when it is quoted; `csvTable` writes it as text. A hand-built
+    `IN (?, ?, …)` is likewise a lint error (R12) — use `inList`.
 
 ## Swallowing an engine error requires `ctx.atomic`
 
@@ -206,8 +223,9 @@ more than it holds), and transactional with the operation. Every later `ctx.chec
 the grant, so nothing else has to remember who may touch what.
 
 Neither alternative is this, so you can tell a real absence from this one: a `ctx.link`
-edge is **not revocable at all** — it is permanent — and org membership is revocable but
-coarse-grained — a whole org, not one record. Never mint an org per domain row, or a
+edge **can be moved but never removed** (`ctx.relink` replaces one parent with another), so
+it is not a revoke, and org membership is revocable but coarse-grained — a whole org, not
+one record. Never mint an org per domain row, or a
 membership table consulted by hand in every handler, to get a revoke. The two-line
 reference is the [todo demo](https://github.com/substrat-run/substrat/tree/main/demos/todo)
 (`src/module.ts`, `todo/share-list` and `todo/revoke-share`).
@@ -216,9 +234,10 @@ reference is the [todo demo](https://github.com/substrat-run/substrat/tree/main/
 
 ```sh
 pnpm test                       # the scenario + the served route table + model parity
-pnpm lint:boundaries            # the layer rules (1–5) — also: npx @substrat-run/boundary-lint
+pnpm lint:boundaries            # the layer rules (1–5, 12) — also: npx @substrat-run/boundary-lint
 pnpm typecheck                  # node + worker targets
-pnpm lint:generated             # the emitted client + openapi.json match the model
+pnpm lint:generated             # the emitted client, openapi.json + model.json match the model
+npx @substrat-run/cli push . --check   # the push's LOCAL gate: data-loss replay + wrangler build
 ```
 
 `boundary-lint` exits non-zero if it *couldn't do its job* (no module code found, no
@@ -314,18 +333,34 @@ team, or external OIDC), never per-app credentials. `src/worker.ts` binds the
 shared `IdentityDO` (`@substrat-run/vertical-auth`, from the registry) as the
 `AUTH` store: it holds the `sub → principal` directory, the owner TOFU claim
 (first sign-in claims the seat `onProvision` recorded), invites, and the
-platform-delivered `substrat:auth` config (`onConfigure`) that `authProviderFor`
+platform-delivered `substrat:auth` config (`onConfigure`) that `instanceAuthFor`
 builds the RP from per request. The issuer is chosen at APP CREATION in the
 dashboard's Identity section — an install created without it stays unwired.
 `garden/whoami` (no new permission keys) gives the SPA its role hint; `/api/me`
-drives the sign-in screen; viewer invites are `POST /api/invites` (owner-only)
-→ accept link → the claim binds the invitee's issuer identity.
+(vertical-auth's `mountSession`: `{ principal, display, email?, role }` or
+`{ status: 'needs-setup', firstSignInOpen }`) drives the sign-in screen; viewer
+invites are vertical-auth's `mountInviteRoutes` — `POST /api/invites` (owner-only,
+the role grant bounded by what the owner holds) → `/?invite=` link, a single-use
+expiring `become` capability → `POST /api/accept-invite` binds the invitee's issuer
+identity. The dashboard's Members section uses the same directory (`membersHook`).
+An owner seat left empty after the first-sign-in window is claimed with a dashboard
+link: `/?claim=` → `POST /api/claim-owner`.
+
+**The UI.** `app/` draws with `@substrat-run/elements` and Web Awesome's free core,
+registered once in `app/src/elements.ts`: `<sub-user-menu>` in the deployed top bar,
+`<sub-entity-table>` for paged reads (the species library, an entity's History over
+`garden/timeline`), and `wa-*` controls for dialogs, fields, buttons, callouts and tabs.
+`app/src/theme.css` is the Triangle theme — `--wa-*` tokens pointed at the handover's own
+(styles.css `:root`), nothing else. The map, the tape keypad, the point picker and the
+residual squares are the handover's own and stay hand-drawn. Keep the CSS reset off custom
+elements: a page rule beats a component's `:host` style.
 
 **Run it.** `pnpm dev` starts the API (:8871, tsx watch) + the Vite app (:5174,
 proxies /api). `pnpm test` = solver unit tests + the scenario incl. denials + the
 served route table + model parity. `pnpm lint:boundaries` and `pnpm lint:generated`
 must stay green. LOCAL dev auth is still the `x-principal` header (markus | vera |
-nils) — worker-side it only exists behind `ALLOW_DEV_HEADER`, never set in prod.
+nils) on the node dev server only — the worker honours no such header (the scaffold
+has since moved local dev to `@substrat-run/dev-issuer`; Triangle has not yet).
 Dev data lives in `.data/` (regenerated from seed — safe to wipe). The app under
 `app/` uses **npm**, the root uses **pnpm**.
 
@@ -336,7 +371,9 @@ everything else on the edge with SPA fallback. Never inline assets into the
 worker. Deployed, `/api/cast` is empty → the app hides the principal picker and
 keys its state off `/api/me`: signed-out → the sign-in screen (→ `/api/auth/login`
 → issuer → callback → cookie session); `needs-setup` → "first sign-in claims this
-garden". The auth choice is create-time only — re-create the app in the dashboard
+garden" (or, once that window has closed, "ask for a claim link"). `substrat push`
+needs the project's own `wrangler` (a devDependency) and Node 22+; `substrat doctor`
+checks both. The auth choice is create-time only — re-create the app in the dashboard
 picking the Auth Server; a re-pointed issuer would orphan `sub → principal`
 bindings.
 

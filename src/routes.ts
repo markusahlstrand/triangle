@@ -51,7 +51,7 @@ export function mountApi(app: Hono<any, any, any>, resolveStub: ResolveStub): Mo
     basePath: '/api',
     // A typo between a declaration and the registered handler fails at mount,
     // with a message naming it, rather than as a 404 on first call.
-    knownOperations: Object.keys(gardenModule.operations ?? {}),
+    knownOperations: Object.keys(gardenModule.operations?.handlers ?? {}),
     mcp: { serverInfo: { name: 'triangle', version: gardenModule.manifest.version } },
   });
 }

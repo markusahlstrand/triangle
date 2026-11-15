@@ -19,9 +19,9 @@ import { buildTriangleHost, seedTriangle, type TriangleWorld } from './seed.js';
 //
 // AUTH, locally: the `x-principal` header names a member of the seeded cast.
 // Every entry is a real principal with real permission tuples — nothing here
-// is a bypass — but it IS a dev seam: the worker only honours the same header
-// behind ALLOW_DEV_HEADER, never set in prod, and resolves callers through the
-// OIDC relying-party flow instead.
+// is a bypass — but it IS a dev seam of this node server alone: the worker
+// honours no such header and resolves every caller through the OIDC
+// relying-party flow.
 // ============================================================================
 
 const dataDir = join(dirname(fileURLToPath(import.meta.url)), '..', '.data');

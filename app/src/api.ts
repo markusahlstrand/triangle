@@ -52,7 +52,7 @@ export function setPrincipal(p: string): void {
 
 /**
  * The typed client over the derived route table. The persona header is the
- * LOCAL dev seam (the worker ignores it unless ALLOW_DEV_HEADER is set); deployed,
+ * LOCAL dev seam of the node dev server (the worker ignores it entirely); deployed,
  * the session cookie set by the relying-party flow is what identifies a request.
  * `errorMessage` is left at its default: the problem+json envelope carries
  * `detail`, which the default already reads.
@@ -79,16 +79,20 @@ export async function fetchCast(): Promise<Cast> {
 
 // ── Session (deployed: OIDC relying-party flow; local dev: the cast) ─────────
 
+/** `GET /api/me` signed in — vertical-auth's session answer plus the role hint. */
 export interface Me {
-  key: string;
+  principal: string;
   display: string;
+  email?: string;
   role: string;
 }
 
 export type Session =
   | { kind: 'dev'; cast: Cast } // local dev server — the x-principal picker
   | { kind: 'user'; me: Me } // deployed, signed in at the issuer
-  | { kind: 'anonymous'; needsSetup: boolean }; // deployed, no session yet
+  // deployed, no session yet. `firstSignInOpen` false: the owner seat waits for a claim
+  // link from the dashboard, so a plain sign-in would bind nobody.
+  | { kind: 'anonymous'; needsSetup: boolean; firstSignInOpen: boolean };
 
 /** Where the worker's relying-party flow lives — redirects to the OIDC issuer. */
 export const LOGIN_URL = '/api/auth/login';
@@ -105,19 +109,32 @@ export async function fetchSession(): Promise<Session> {
   try {
     const res = await fetch('/api/me');
     if (res.ok) {
-      const body = (await res.json()) as Me & { status?: string };
-      if (body.status === 'needs-setup') return { kind: 'anonymous', needsSetup: true };
+      const body = (await res.json()) as Me & { status?: string; firstSignInOpen?: boolean };
+      if (body.status === 'needs-setup') {
+        return { kind: 'anonymous', needsSetup: true, firstSignInOpen: body.firstSignInOpen ?? true };
+      }
       return { kind: 'user', me: body };
     }
   } catch {
     /* treat as anonymous — the sign-in screen is the safe default */
   }
-  return { kind: 'anonymous', needsSetup: false };
+  return { kind: 'anonymous', needsSetup: false, firstSignInOpen: false };
 }
 
-/** Claim an invite while signed in: binds our issuer identity to the invited principal. */
-export async function acceptInvite(token: string): Promise<void> {
-  const res = await fetch('/api/accept-invite', {
+/**
+ * The two links a person can arrive with, each redeemed once signed in:
+ * an invite (`?invite=` → binds our issuer identity to the invited principal) and an
+ * owner claim (`?claim=`, minted by the dashboard when the first-sign-in window closed
+ * with the owner seat still empty → binds us to the owner).
+ */
+export const LINKS = {
+  invite: { param: 'invite', storageKey: 'triangle-invite', path: '/api/accept-invite' },
+  claim: { param: 'claim', storageKey: 'triangle-claim', path: '/api/claim-owner' },
+} as const;
+
+/** Redeem a stashed link while signed in. */
+export async function redeemLink(path: string, token: string): Promise<void> {
+  const res = await fetch(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token }),

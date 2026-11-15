@@ -72,9 +72,16 @@ const { API_DOCUMENT } = (await import(pathToFileURL(join(ROOT, 'src/api.ts')).h
 };
 const openapiSource = `${JSON.stringify(API_DOCUMENT, null, 2)}\n`;
 
+// The entity model of record — what `substrat push` records with the version, and what the
+// dashboard's Data → Model tab and `substrat model view .` read. Rendered from `gardenModel`
+// (`emitModel(gardenEntities)` in spec/model.ts), deterministic, so a changed table is a diff.
+if (!('gardenModel' in model)) cannot('spec/model.ts exports no `gardenModel` (emitModel(gardenEntities))');
+const modelSource = `${JSON.stringify(model.gardenModel, null, 2)}\n`;
+
 const artifacts: { path: string; content: string; what: string }[] = [
   { path: join(ROOT, client.out), content: clientSource, what: `${client.out} (SPA client)` },
   { path: join(ROOT, 'openapi.json'), content: openapiSource, what: 'openapi.json' },
+  { path: join(ROOT, 'model.json'), content: modelSource, what: 'model.json' },
 ];
 
 if (!check) {

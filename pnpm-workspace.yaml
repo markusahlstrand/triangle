@@ -12,3 +12,6 @@ minimumReleaseAgeExclude:
 allowBuilds:
   better-sqlite3: true
   esbuild: true
+  # wrangler's runtime ships its binary as a platform package; its install script is
+  # only a fallback that nothing here needs (the scaffold denies it the same way).
+  workerd: false

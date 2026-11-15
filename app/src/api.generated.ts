@@ -298,8 +298,9 @@ export interface TriangleClient {
    * `GET /sites` — `garden/list-sites`
    *
    * Paged: walk it with `follow(page.next)` until `next` is `null`.
+   * Sorted by `created_at` unless `sort` names another declared column.
    */
-  listSites(): Promise<Paged<SiteSummary>>;
+  listSites(input?: { limit?: number; order?: "asc" | "desc"; sort?: "created_at" | "name" }): Promise<Paged<SiteSummary>>;
 
   /**
    * The species library, alphabetical
@@ -307,8 +308,9 @@ export interface TriangleClient {
    * `GET /species` — `garden/list-species`
    *
    * Paged: walk it with `follow(page.next)` until `next` is `null`.
+   * Sorted by `common_name` unless `sort` names another declared column.
    */
-  listSpecies(): Promise<Paged<Species>>;
+  listSpecies(input?: { limit?: number; order?: "asc" | "desc"; sort?: "common_name" | "created_at" }): Promise<Paged<Species>>;
 
   /**
    * Dry-run a constraint: what would it move, and by how much
@@ -338,7 +340,7 @@ export interface TriangleClient {
    *
    * Paged: walk it with `follow(page.next)` until `next` is `null`.
    */
-  timeline(input: { entityType: string; entityId: string }): Promise<Paged<({ id: string; type: string; occurredAt: string; actor: string | { system: string } | { connection: string }; payload: unknown; authorization: { permission: string; grant?: string }[] | null; impersonation: { session: string; by: string } | null; piiClass: "none" | "pseudonymous" | "direct"; subjectId: string | null })>>;
+  timeline(input: { entityType: string; entityId: string; limit?: number; order?: "asc" | "desc" }): Promise<Paged<({ id: string; type: string; occurredAt: string; actor: string | { system: string } | { connection: string } | { capability: string } | { vertical: string; scope: string }; decodeError?: string; payload: unknown; authorization: { permission: string; grant?: string }[] | null; impersonation: { session: string; by: string } | null; piiClass: "none" | "pseudonymous" | "direct"; subjectId: string | null; operation: string | null; version: string | null; causedBy: string | null; invocationId: string | null })>>;
 
   /**
    * Rename a feature, open or close it, retrace its run or change its properties
@@ -465,9 +467,16 @@ export function createClient(options: ClientOptions = {}): TriangleClient {
 
   const parse = async (res: Response): Promise<unknown> => {
     const text = await res.text();
-    const body: unknown = text ? JSON.parse(text) : null;
-    if (!res.ok) throw new ApiError(res.status, readMessage(body, res) ?? res.statusText, body);
-    return body;
+    if (!res.ok) {
+      let body: unknown = null;
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch {
+        // A refusal from in front of the app (an edge's HTML 502) is not JSON; its status still says what happened.
+      }
+      throw new ApiError(res.status, readMessage(body, res) ?? res.statusText, body);
+    }
+    return text ? JSON.parse(text) : null;
   };
 
   const send = async (path: string, method: string, body: unknown, params: unknown): Promise<unknown> =>
@@ -561,10 +570,10 @@ export function createClient(options: ClientOptions = {}): TriangleClient {
       send(`/sites/${encodeURIComponent(String(input.siteId))}/dxf`, "GET", undefined, omit(input, ["siteId"])),
     getSite: (input: Args) =>
       send(`/sites/${encodeURIComponent(String(input.siteId))}`, "GET", undefined, omit(input, ["siteId"])),
-    listSites: () =>
-      page("/sites", "GET", undefined, undefined),
-    listSpecies: () =>
-      page("/species", "GET", undefined, undefined),
+    listSites: (input?: Args) =>
+      page("/sites", "GET", undefined, input),
+    listSpecies: (input?: Args) =>
+      page("/species", "GET", undefined, input),
     previewConstraint: (input: Args) =>
       send(`/sites/${encodeURIComponent(String(input.siteId))}/constraints/preview`, "POST", omit(input, ["siteId"]), undefined),
     removePlant: (input: Args) =>

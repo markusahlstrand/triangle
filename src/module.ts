@@ -9,18 +9,16 @@
  * coordinates (concept §2): every mutation that changes the survey re-solves,
  * persists, and returns what moved, so nothing moves silently.
  *
- * `satisfies { … OperationHandler<HandlerInput, HandlerOutput> }` is the join: a
- * handler whose input or return disagrees with its declaration, one declared and
- * not implemented, or one implemented and not declared, is a compile error naming
- * the exact operation.
+ * `operationsFor(gardenOperations)` is the join: a handler whose input or return
+ * disagrees with its declaration, one declared and not implemented, or one
+ * implemented and not declared, is a compile error naming the exact operation.
  *
  * Data access is `ctx.sql` only. Time is `ctx.now()`. No `fetch`, no `node:*`.
  */
 import {
   mapPage,
-  operationConcurrencyOf,
-  operationInputsOf,
   substratError,
+  type DerivedKeys,
   type EntityRow,
   type HandlerInput,
   type HandlerOutput,
@@ -28,6 +26,7 @@ import {
 } from '@substrat-run/contracts';
 import {
   assertAllowed,
+  operationsFor,
   readHistory,
   ulid,
   type ModuleRegistration,
@@ -638,11 +637,6 @@ const operations = {
 
   // ── Species & plants ───────────────────────────────────────────────────────
 
-  'garden/list-species': async (ctx, input) => {
-    assertAllowed(await ctx.check(GARDEN_PERM.read));
-    return ctx.page<SpeciesRow>('species', input);
-  },
-
   'garden/upsert-species': async (ctx, input) => {
     assertAllowed(await ctx.check(GARDEN_PERM.manage));
     const id = input.id ?? ulid();
@@ -836,7 +830,8 @@ const operations = {
 } satisfies {
   // Derived by the platform, not restated here — `HandlerOutput` is what knows
   // that a `paged` declaration means the handler returns a Page of the entry.
-  [K in keyof typeof gardenOperations]: OperationHandler<
+  // An operation declaring `derive` has no handler: the kernel writes it.
+  [K in Exclude<keyof typeof gardenOperations, DerivedKeys<typeof gardenOperations>>]: OperationHandler<
     HandlerInput<(typeof gardenOperations)[K]>,
     HandlerOutput<(typeof gardenOperations)[K]>
   >;
@@ -845,12 +840,10 @@ const operations = {
 export const gardenModule: ModuleRegistration = {
   manifest: gardenManifest,
   migrations: gardenMigrations,
-  // The host parses every invocation against the same declaration the routes,
-  // the document and the client come from — HTTP, test, seed, MCP alike — so
-  // "parse, don't trust" holds on every path in, not in the handlers that remembered.
-  operationInputs: operationInputsOf(gardenOperations),
-  // The `If-Match` precondition for the two field-bag updates, compared inside
-  // the operation's transaction by the host.
-  operationConcurrency: operationConcurrencyOf(gardenOperations),
-  operations: operations as ModuleRegistration['operations'],
+  // The binder joins the handlers to the declaration by a type, and carries the
+  // maps derived from that same declaration: the input schemas the host parses
+  // every invocation against (HTTP, test, seed, MCP alike — "parse, don't trust"
+  // on every path in), and the `If-Match` precondition for the two field-bag
+  // updates, compared inside the operation's transaction by the host.
+  ...operationsFor(gardenOperations)(operations),
 };

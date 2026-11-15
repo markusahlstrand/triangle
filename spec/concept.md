@@ -148,8 +148,8 @@ One tenant = one household; a tenant may hold several gardens (rows, not tenants
 **Sign-in, locally:** the dev server (`pnpm dev`) resolves the caller from an
 `x-principal` header naming a member of the cast, and the app shows a persona picker.
 Every entry is a real principal with real permission tuples — nothing is a bypass —
-but it is a dev seam: the worker only honours the header behind `ALLOW_DEV_HEADER`,
-never set in production.
+but it is a dev seam of the local node server only: the deployed worker honours no
+such header, and a verified login is its only way in.
 
 **Sign-in, deployed:** an ordinary OpenID Connect round-trip against the issuer chosen
 when the app was created (an Auth Server app in the team, or an external provider).

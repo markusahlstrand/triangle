@@ -76,9 +76,9 @@ Every vertical gets this whether or not it uses a single engine:
   an operation narrows a permission it already holds onto one entity, and withdraws it,
   with `ctx.grant(principal, perm, entityRef)` / `ctx.revoke(principal, perm, entityRef)`
   — entity-required, delegating (re-checks the caller's own decision), transactional with
-  the operation. Neither alternative is this: a `ctx.link` edge is permanent (not
-  revocable at all), and org membership is revocable but coarse-grained. Never mint an
-  org per domain row to get a revoke.
+  the operation. Neither alternative is this: a `ctx.link` edge can be moved
+  (`ctx.relink`) but never removed, so it is not a revoke, and org membership is
+  revocable but coarse-grained. Never mint an org per domain row to get a revoke.
 - **Events + audit** — every mutation emits a kernel-stamped event. Origin fields (tenant,
   scope, actor, time) are stamped by the kernel; your code cannot mislabel one.
 - **Migrations** — journaled per module, applied lazily per scope.
@@ -163,7 +163,7 @@ stop. Do not scaffold.
 ## Step 3 — Write the design document
 
 **This is the deliverable.** Everything before now was learning; this is where it lands
-somewhere the user can hold. Write a **checked-in `spec/concept.md`** — beside
+somewhere the user can hold. Fill in the **checked-in `spec/concept.md`** (the scaffold ships it) — beside
 `spec/model.ts`, which is this same design one rung more concrete — in the user's own
 vocabulary — no Substrat internals, no decision refs, no cross-references to
 platform docs. Someone who has never heard of Substrat must be able to read it and recognise
@@ -174,6 +174,12 @@ their own business.
 ```
 Status: draft v0.1 · Last updated: <date> · For review before any code
 ```
+
+**The layout is fixed by the scaffold**: keep its seven headings and the `substrat:` markers —
+purpose and users, roles and permissions, entity model, processes, screens and dashboard,
+decisions log, open questions. Roles, entities and processes are generated from the code
+(Step 5); what follows describes the authored parts, and the denials preview below is prose that
+sits beside the generated roles table, not instead of it.
 
 **The template** — the coverage map (Step 2) is sections 3–4, already done; the rest is the
 interview written down. Two sections deliberately *preview* the code checkpoints of Step 7 in
@@ -248,6 +254,19 @@ say so rather than letting them wave it through — a design nobody understands 
 reproduces exactly the failure Substrat exists to prevent. Iterate the document until they
 can, and only then take explicit approval.
 
+**A change to a vertical that already has a `model.json`** goes through this same gate, and what
+the gate shows is the **concept delta**, not prose. Declare the change in `spec/model.ts` and
+its roles only — no handler, no screen — re-emit the artifacts, and run `substrat plan`. It
+prints the entities added, changed and removed (the model before and after), the lifecycle
+changes with the operation that triggers each transition, the permission-diff table, the
+spec-version impact (patch / minor / major, from the same classifier `substrat changeset`
+uses), and the decisions-log entry approval would write. Show it to the user as printed, walk
+them through it in their vocabulary, and **stop**. Only once they approve, run the
+`substrat plan --approve <digest> --by "<their name>" --why "<their reason>"` line it printed:
+that records the approval in the Decisions log of `spec/concept.md`. Never run `--approve`
+on your own judgement, and if the model moves after they read it, show the delta again — the
+old digest is refused.
+
 Approval of the design is what unlocks Step 5. Until you have it, you are still in design.
 
 ---
@@ -289,8 +308,10 @@ export const model = emitModel(entities);
 
 These are compile errors, not lints: a `parents` naming no entity, a `permission` that is
 not declared, an `entityIdFrom` naming no field of that operation's `output`, a `payload`
-carrying a field the entity marks `erasable`, a `{var}` in an HTTP path that names no input
-field. All before a handler exists.
+carrying a field the entity marks `erasable` or `outsideText`, a `{var}` in an HTTP path that
+names no input field. All before a handler exists. Mark `outsideText` on any column whose value
+a customer, a remote system or an inbound header writes and that is not personal data (an error
+a provider returned, a subject line, a fetched document): it may sit on its row, never on an event.
 
 Field names mirror the SQL columns, snake_case included — a prettier naming here is a second
 description of the same rows. Not every table is an entity: an entity is something the
@@ -310,6 +331,19 @@ and event subjects all need one id, so naming such an entity in `parents`,
 compile error. It is still a full model member with migrations and a row type. A
 single-column key that is not called `id` stays fully pointable.
 
+**Run `substrat concept sync` after every change to the model.** It reads `model.json` beside
+`package.json`, which a scaffold does not write for you: write the exported model there
+(`JSON.stringify(<your emitModel result>, null, 2)`) first. Sync then rewrites the entity and
+process regions of `spec/concept.md` between the `<!-- substrat:entities -->` and
+`<!-- substrat:processes -->` markers (a Mermaid ER diagram, and one state diagram per lifecycle).
+The roles region is filled from a `PERMISSIONS.md` beside `model.json`; a scaffold has no command
+that writes one, so until it does the region says so and the roles live in your own prose. Never
+edit between the markers by hand, and run `substrat concept sync --check` before you hand the
+design over: it exits 1 while a region is stale. **Write the decisions-log entry yourself**, in
+the document's *Decisions log* section on every change to the model or a permission: the date,
+what changed, and why. No tool in a scaffold enforces it, so the reviewer reading the diff is the
+gate.
+
 Behaviour stays prose in `spec/concept.md`. Inventing a way to declare a state *transition*
 means the boundary slipped.
 
@@ -324,7 +358,7 @@ to make the build pass.
 ## Step 6 — Reshape the reference
 
 The design is approved. The scaffold already contains a working vertical in `src/` + `test/` —
-the bike-repair shop. **Read it first** (it's your Callout: the real, green implementation of
+the bike-repair shop. **Read it first** (it is your reference: the real, green implementation of
 every pattern this step describes), then reshape it into the user's domain from the approved
 `spec/concept.md`:
 
@@ -374,9 +408,9 @@ operations + the `ModuleRegistration`. Keep the split — the linter and tests e
   timestamps, money/decimals as TEXT. **Append-only forever after first ship.**
 - Operations: first line is always `assertAllowed(await ctx.check(PERM))`.
   `ctx.link(child, parent)` when creating related entities.
-- **Handlers do not hand-parse their input.** The module passes
-  `operationInputs: operationInputsOf(<vertical>Operations)` beside its `operations`, and
-  the host parses every invocation against the declared schema before the guards and the
+- **Handlers do not hand-parse their input.** The module binds its handlers with
+  `...operationsFor(<vertical>Operations)({ … })`, which hands the host the declared schemas
+  with them, and the host parses every invocation against them before the guards and the
   handler run — on every path in (HTTP, test, seed, schedule). The reference module already
   does this; keep it. An inline `z.object(…).parse(input)` at the top of a handler is a
   second description of a schema the model already declares, and it only covers the paths
@@ -472,7 +506,7 @@ Build confidence in this order, and **show the user the output of each**:
 pnpm install
 pnpm test                        # the scenario, including the denials
 npx @substrat-run/boundary-lint  # the layer rules
-pnpm dev                         # API on :8871 (PORT=… WEB_PORT=… to move it)
+pnpm dev                         # API on :8891 (PORT=… WEB_PORT=… to move it)
 ```
 
 Then **actually exercise it** — don't just report that the server started. A green scenario
@@ -519,7 +553,7 @@ Two more that each fail silently:
   `notFoundHandling: "single-page-application"`, a missing `/api/*` entry answers every API
   call with `index.html` — the app then reports parse errors instead of denials.
 - **The app calls its own origin** (`fetch('/api' + path)`), never a baked base URL. The Vite
-  `proxy` block is a dev-only convenience; `VITE_API_URL` or `localhost:8871` works on the
+  `proxy` block is a dev-only convenience; `VITE_API_URL` or `localhost:8891` works on the
   author's machine and reaches nothing from a phone.
 
 `substrat push` refuses an `app/` that nothing would serve, so this cannot reach a hostname

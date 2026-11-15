@@ -1,0 +1,401 @@
+{
+  "entities": {
+    "constraint": {
+      "table": "garden_constraints",
+      "fields": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "site_id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "right-angle",
+              "parallel",
+              "equal-length",
+              "colinear"
+            ]
+          },
+          "points_json": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "site_id",
+          "kind",
+          "points_json",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "parents": [
+        "site"
+      ]
+    },
+    "feature": {
+      "table": "garden_features",
+      "fields": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "site_id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "retention-wall",
+              "pool",
+              "terrace",
+              "stairs",
+              "house",
+              "fence",
+              "bed",
+              "path"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "closed": {
+            "type": "number"
+          },
+          "props_json": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "site_id",
+          "type",
+          "name",
+          "closed",
+          "props_json",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "parents": [
+        "site"
+      ]
+    },
+    "featureVertex": {
+      "table": "garden_feature_vertices",
+      "fields": {
+        "type": "object",
+        "properties": {
+          "feature_id": {
+            "type": "string"
+          },
+          "seq": {
+            "type": "number"
+          },
+          "point_id": {
+            "type": "string"
+          },
+          "curved_to_next": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "feature_id",
+          "seq",
+          "point_id",
+          "curved_to_next"
+        ],
+        "additionalProperties": false
+      },
+      "primaryKey": [
+        "feature_id",
+        "seq"
+      ]
+    },
+    "measurement": {
+      "table": "garden_measurements",
+      "fields": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "site_id": {
+            "type": "string"
+          },
+          "point_a": {
+            "type": "string"
+          },
+          "point_b": {
+            "type": "string"
+          },
+          "distance_m": {
+            "type": "number"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "site_id",
+          "point_a",
+          "point_b",
+          "distance_m",
+          "note",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "parents": [
+        "site"
+      ]
+    },
+    "plant": {
+      "table": "garden_plants",
+      "fields": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "site_id": {
+            "type": "string"
+          },
+          "point_id": {
+            "type": "string"
+          },
+          "species_id": {
+            "type": "string"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "planted_on": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "site_id",
+          "point_id",
+          "species_id",
+          "label",
+          "planted_on",
+          "note",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "parents": [
+        "site"
+      ]
+    },
+    "point": {
+      "table": "garden_points",
+      "fields": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "site_id": {
+            "type": "string"
+          },
+          "seq": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "elevation_m": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "x": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "y": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "named",
+              "measured",
+              "placed"
+            ]
+          },
+          "side": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "locked": {
+            "type": "number"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "site_id",
+          "seq",
+          "name",
+          "elevation_m",
+          "x",
+          "y",
+          "status",
+          "side",
+          "locked",
+          "note",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "parents": [
+        "site"
+      ]
+    },
+    "site": {
+      "table": "garden_sites",
+      "fields": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "datum_note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "datum_note",
+          "created_at"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "species": {
+      "table": "garden_species",
+      "fields": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "common_name": {
+            "type": "string"
+          },
+          "latin_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "tree",
+              "shrub",
+              "hedge",
+              "perennial",
+              "climber"
+            ]
+          },
+          "mature_canopy_m": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "mature_height_m": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "years_to_mature": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "common_name",
+          "latin_name",
+          "category",
+          "mature_canopy_m",
+          "mature_height_m",
+          "years_to_mature",
+          "created_at"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}
