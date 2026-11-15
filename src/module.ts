@@ -211,6 +211,26 @@ function suspectsCm(suspects: Suspect[]): SolveReport['suspects'] {
   }));
 }
 
+/**
+ * The points as the CURRENT solve places them. Stored x/y are the last solve that was written,
+ * and a read must not write — so when the solver itself has changed (a better placement, a new
+ * version) since a garden was last edited, the stored coordinates lag behind the residuals the
+ * same read reports. A read shows one consistent picture: this solve's positions and statuses.
+ * The next mutation writes them for good.
+ */
+export function asSolved(points: PointRow[], measurements: MeasurementRow[], solve: SolveReport): PointRow[] {
+  const placed = new Set(solve.placed);
+  const moved = new Map(solve.moved.map((m) => [m.pointId, m.to]));
+  const measured = new Set(measurements.flatMap((m) => [m.point_a, m.point_b]));
+  return points.map((p) => {
+    if (!placed.has(p.id)) {
+      return { ...p, x: null, y: null, status: measured.has(p.id) ? 'measured' : 'named' };
+    }
+    const to = moved.get(p.id);
+    return to ? { ...p, x: to.x, y: to.y, status: 'placed' } : { ...p, status: 'placed' };
+  });
+}
+
 function count(ctx: OperationContext, table: string, siteId: string): number {
   // table names come from the closed list at the call site, never from input
   return Number(
@@ -299,11 +319,12 @@ const operations = {
     const plants = ctx.sql
       .query<PlantRow>('SELECT * FROM garden_plants WHERE site_id = ? ORDER BY created_at', [site.id])
       .map((p) => ({ ...p, species: speciesOr404(ctx, p.species_id) }));
-    // Read-only solve: residuals + pending mirror choices for the UI, no writes.
+    // Read-only solve: residuals + pending mirror choices for the UI, no writes — and the points
+    // where that same solve puts them, so the map and the residuals always agree.
     const solve = runSolve(ctx, site.id, false);
     return {
       site,
-      points,
+      points: asSolved(points, measurements, solve),
       measurements,
       constraints: constraints.map((c) => ({ ...c, points: JSON.parse(c.points_json) as string[] })),
       features,
@@ -764,7 +785,9 @@ const operations = {
     // Viewers can export (concept §4) — read, not manage.
     assertAllowed(await ctx.check(GARDEN_PERM.read));
     const site = siteOr404(ctx, input.siteId);
-    const { points } = loadSurvey(ctx, site.id);
+    const survey = loadSurvey(ctx, site.id);
+    // The drawing is the current solve, like the map — never coordinates a newer solver would move.
+    const points = asSolved(survey.points, survey.measurements, runSolve(ctx, site.id, false));
     const placed = points.filter((p) => p.x !== null && p.y !== null);
     const byId = new Map(placed.map((p) => [p.id, p]));
 
