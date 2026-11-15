@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Column } from '@substrat-run/elements/entity-table';
 import type { TableSource } from '@substrat-run/elements/entity-table-model';
 import {
@@ -162,8 +162,11 @@ export function AddMeasurementSheet(props: {
 
   const key = (k: string) => {
     setResult(null);
-    if (k === '⌫') setCm((v) => v.slice(0, -1));
-    else if (cm.length < 6) setCm((v) => (k === '.' && v.includes('.') ? v : v + k));
+    setCm((v) => {
+      if (k === '⌫') return v.slice(0, -1);
+      if (v.length >= 6 || (k === '.' && v.includes('.'))) return v;
+      return v + k;
+    });
   };
 
   const save = async (next: boolean) => {
@@ -194,6 +197,28 @@ export function AddMeasurementSheet(props: {
       else props.onClose();
     }
   };
+
+  // The physical keyboard drives the same keypad once both points are picked: digits,
+  // `.`/`,`, Backspace, and Enter saves (Shift+Enter: save & next). Typing into a real
+  // field elsewhere is left alone.
+  const saveRef = useRef(save);
+  saveRef.current = save;
+  useEffect(() => {
+    if (!a || !b) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (/^[0-9]$/.test(e.key)) key(e.key);
+      else if (e.key === '.' || e.key === ',') key('.');
+      else if (e.key === 'Backspace') key('⌫');
+      else if (e.key === 'Enter') void saveRef.current(e.shiftKey);
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [a, b]);
 
   const meters = cm ? (Number(cm) / 100).toFixed(2) : null;
   const overTape = cm !== '' && Number(cm) > 2000;

@@ -32,6 +32,7 @@ import {
   useAction,
 } from './Sheets';
 import type { Feature } from './api';
+import { MembersSheet } from './Members';
 
 // ============================================================================
 // The shell: principal picker in the top bar (the dev cast — every entry is a
@@ -56,6 +57,7 @@ export default function App() {
   const [sites, setSites] = useState<SiteSummary[] | null>(null);
   const [siteId, setSiteId] = useState<string | null>(null);
   const [site, setSite] = useState<SitePayload | null>(null);
+  const [showMembers, setShowMembers] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const cast = session?.kind === 'dev' ? session.cast : {};
@@ -153,11 +155,22 @@ export default function App() {
           </wa-select>
         )}
         {session?.kind === 'user' && (
-          // Deployed: the account menu reads the same `/api/me` the shell does, and signs
-          // out through `/api/auth/logout`.
-          <sub-user-menu class="user-menu" show="avatar" />
+          // Deployed: the account menu reads the same `/api/me` the shell does, shows the
+          // signed-in address beside the avatar, and signs out through `/api/auth/logout`.
+          // The owner also manages the garden's members from it.
+          <sub-user-menu
+            class="user-menu"
+            show="email"
+            onwa-select={(e: Event) => {
+              const item = (e as CustomEvent<{ item: { value: string } }>).detail?.item;
+              if (item?.value === 'members') setShowMembers(true);
+            }}
+          >
+            {session.me.role === 'garden-owner' && <wa-dropdown-item value="members">Members</wa-dropdown-item>}
+          </sub-user-menu>
         )}
       </div>
+      {showMembers && <MembersSheet onClose={() => setShowMembers(false)} />}
       {error && <ErrorNote>{error}</ErrorNote>}
       {session?.kind === 'anonymous' && (
         <div className="screen">
