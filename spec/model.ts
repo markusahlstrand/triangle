@@ -24,6 +24,12 @@ export const FEATURE_TYPES = [
   'fence',
   'bed',
   'path',
+  // Garden furniture — drawn through its taped corners like everything else.
+  'table',
+  'chair',
+  'bench',
+  'lounger',
+  'parasol',
 ] as const;
 
 export const CONSTRAINT_KINDS = ['right-angle', 'parallel', 'equal-length', 'colinear'] as const;

@@ -171,7 +171,7 @@ All tables are the vertical's own (prefix `garden_`), declared as entities in
 | **point** | `garden_points` | id, site_id, seq, name, elevation_m, x, y, status, side, locked, note, created_at | `x`/`y` are solver output; `status` ∈ named · measured · placed; `side` ∈ −1 · 1 · null |
 | **measurement** | `garden_measurements` | id, site_id, point_a, point_b, distance_m, note, created_at | a tape pull, in meters |
 | **constraint** | `garden_constraints` | id, site_id, kind, points_json, created_at | `kind` ∈ right-angle · parallel · equal-length · colinear |
-| **feature** | `garden_features` | id, site_id, type, name, closed, props_json, created_at | `type` ∈ retention-wall · pool · terrace · stairs · house · fence · bed · path |
+| **feature** | `garden_features` | id, site_id, type, name, closed, props_json, created_at | `type` ∈ retention-wall · pool · terrace · stairs · house · fence · bed · path · table · chair · bench · lounger · parasol (furniture, drawn through its taped corners) |
 | **featureVertex** | `garden_feature_vertices` | feature_id, seq, point_id, curved_to_next | keyed by (feature_id, seq) — the ordered point-run |
 | **species** | `garden_species` | id, common_name, latin_name, category, mature_canopy_m, mature_height_m, years_to_mature, created_at | `category` ∈ tree · shrub · hedge · perennial · climber |
 | **plant** | `garden_plants` | id, site_id, point_id, species_id, label, planted_on, note, created_at | `label` falls back to the species' common name |

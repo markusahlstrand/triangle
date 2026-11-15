@@ -118,7 +118,7 @@ export interface Constraint {
 export interface Feature {
   id: string;
   site_id: string;
-  type: "retention-wall" | "pool" | "terrace" | "stairs" | "house" | "fence" | "bed" | "path";
+  type: "retention-wall" | "pool" | "terrace" | "stairs" | "house" | "fence" | "bed" | "path" | "table" | "chair" | "bench" | "lounger" | "parasol";
   name: string;
   closed: number;
   props_json: string;
@@ -175,7 +175,7 @@ export interface SitePayload {
   points: Point[];
   measurements: Measurement[];
   constraints: ({ id: string; site_id: string; kind: "right-angle" | "parallel" | "equal-length" | "colinear"; points_json: string; created_at: string; points: string[] })[];
-  features: ({ id: string; site_id: string; type: "retention-wall" | "pool" | "terrace" | "stairs" | "house" | "fence" | "bed" | "path"; name: string; closed: number; props_json: string; created_at: string; vertices: { point_id: string; seq: number; curved_to_next: number }[]; props: Record<string, unknown> })[];
+  features: ({ id: string; site_id: string; type: "retention-wall" | "pool" | "terrace" | "stairs" | "house" | "fence" | "bed" | "path" | "table" | "chair" | "bench" | "lounger" | "parasol"; name: string; closed: number; props_json: string; created_at: string; vertices: { point_id: string; seq: number; curved_to_next: number }[]; props: Record<string, unknown> })[];
   plants: ({ id: string; site_id: string; point_id: string; species_id: string; label: string | null; planted_on: string | null; note: string | null; created_at: string; species: Species })[];
   solve: SolveReport;
 }
@@ -234,7 +234,7 @@ export interface TriangleClient {
    *
    * `POST /sites/{siteId}/features` — `garden/create-feature`
    */
-  createFeature(input: { siteId: string; type: "retention-wall" | "pool" | "terrace" | "stairs" | "house" | "fence" | "bed" | "path"; name: string; closed?: boolean; vertices: { pointId: string; curvedToNext?: boolean }[]; props?: Record<string, unknown> }): Promise<Feature>;
+  createFeature(input: { siteId: string; type: "retention-wall" | "pool" | "terrace" | "stairs" | "house" | "fence" | "bed" | "path" | "table" | "chair" | "bench" | "lounger" | "parasol"; name: string; closed?: boolean; vertices: { pointId: string; curvedToNext?: boolean }[]; props?: Record<string, unknown> }): Promise<Feature>;
 
   /**
    * Name a survey point (the first becomes the origin, the second the baseline)

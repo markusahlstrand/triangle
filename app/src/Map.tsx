@@ -24,6 +24,12 @@ const FEATURE_STYLE: Record<string, { stroke: string; width: number; dash?: stri
   fence: { stroke: '#5d5a63', width: 0.05, dash: '0.4 0.2' },
   bed: { stroke: '#6a8f5f', width: 0.05, fill: 'rgb(106 143 95 / 0.12)' },
   path: { stroke: '#a89f8d', width: 0.1, dash: '0.5 0.25' },
+  // Furniture: thin, warm wood, lightly filled — it sits on the garden, not in it.
+  table: { stroke: '#8a5a2b', width: 0.04, fill: 'rgb(138 90 43 / 0.18)' },
+  chair: { stroke: '#8a5a2b', width: 0.03, fill: 'rgb(138 90 43 / 0.12)' },
+  bench: { stroke: '#8a5a2b', width: 0.04, fill: 'rgb(138 90 43 / 0.15)' },
+  lounger: { stroke: '#8a5a2b', width: 0.03, fill: 'rgb(138 90 43 / 0.1)' },
+  parasol: { stroke: '#c0763a', width: 0.03, dash: '0.15 0.1', fill: 'rgb(192 118 58 / 0.08)' },
 };
 
 const VIOLET = 'oklch(0.55 0.14 295)';

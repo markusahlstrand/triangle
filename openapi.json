@@ -1284,7 +1284,12 @@
                       "house",
                       "fence",
                       "bed",
-                      "path"
+                      "path",
+                      "table",
+                      "chair",
+                      "bench",
+                      "lounger",
+                      "parasol"
                     ]
                   },
                   "name": {
@@ -1355,7 +1360,12 @@
                         "house",
                         "fence",
                         "bed",
-                        "path"
+                        "path",
+                        "table",
+                        "chair",
+                        "bench",
+                        "lounger",
+                        "parasol"
                       ]
                     },
                     "name": {
@@ -2296,7 +2306,12 @@
                         "house",
                         "fence",
                         "bed",
-                        "path"
+                        "path",
+                        "table",
+                        "chair",
+                        "bench",
+                        "lounger",
+                        "parasol"
                       ]
                     },
                     "name": {
@@ -3633,7 +3648,12 @@
                               "house",
                               "fence",
                               "bed",
-                              "path"
+                              "path",
+                              "table",
+                              "chair",
+                              "bench",
+                              "lounger",
+                              "parasol"
                             ]
                           },
                           "name": {

@@ -653,16 +653,40 @@ export function ConstraintSheet(props: {
 
 // ── Feature editor (design 16/17, list-based tracing) ────────────────────────
 
-const FEATURE_TYPES = [
-  'retention-wall',
-  'pool',
-  'terrace',
-  'stairs',
-  'house',
-  'fence',
-  'bed',
-  'path',
-] as const;
+/** Every feature type with the words the picker shows; the order is the picker's. */
+const FEATURE_TYPES: { type: Feature['type']; label: string; group: 'Built' | 'Furniture' }[] = [
+  { type: 'retention-wall', label: 'Retention wall', group: 'Built' },
+  { type: 'pool', label: 'Pool', group: 'Built' },
+  { type: 'terrace', label: 'Terrace', group: 'Built' },
+  { type: 'stairs', label: 'Stairs', group: 'Built' },
+  { type: 'house', label: 'House', group: 'Built' },
+  { type: 'fence', label: 'Fence', group: 'Built' },
+  { type: 'bed', label: 'Bed', group: 'Built' },
+  { type: 'path', label: 'Path', group: 'Built' },
+  { type: 'table', label: 'Table', group: 'Furniture' },
+  { type: 'chair', label: 'Chair', group: 'Furniture' },
+  { type: 'bench', label: 'Bench', group: 'Furniture' },
+  { type: 'lounger', label: 'Sun lounger', group: 'Furniture' },
+  { type: 'parasol', label: 'Parasol', group: 'Furniture' },
+];
+/** An example name per type — what the empty name field suggests. */
+const PLACEHOLDER: Partial<Record<Feature['type'], string>> = {
+  'retention-wall': 'lower retention wall',
+  pool: 'the pool',
+  terrace: 'upper terrace',
+  stairs: 'stairs to the pool',
+  house: 'the house',
+  fence: 'east fence',
+  bed: 'vegetable bed',
+  path: 'path to the gate',
+  table: 'dining table',
+  chair: 'reading chair',
+  bench: 'bench by the olive',
+  lounger: 'pool lounger',
+  parasol: 'big parasol',
+};
+/** A table or a pool is an outline; a fence or a path is a line. */
+const CLOSED_BY_DEFAULT = new Set<Feature['type']>(['pool', 'terrace', 'house', 'bed', 'table', 'chair', 'bench', 'lounger', 'parasol']);
 
 export function FeatureSheet(props: {
   site: SitePayload;
@@ -690,21 +714,28 @@ export function FeatureSheet(props: {
             label="Type"
             size="large"
             value={type}
-            onChange={(e) => setType(valueOf(e) as Feature['type'])}
+            onChange={(e) => {
+              const t = valueOf(e) as Feature['type'];
+              setType(t);
+              if (!f) setClosed(CLOSED_BY_DEFAULT.has(t));
+            }}
             disabled={f !== null}
           >
-            {FEATURE_TYPES.map((t) => (
-              <wa-option key={t} value={t}>
-                {t}
-              </wa-option>
-            ))}
+            {(['Built', 'Furniture'] as const).map((g) => [
+              <small key={g}>{g}</small>,
+              ...FEATURE_TYPES.filter((t) => t.group === g).map((t) => (
+                <wa-option key={t.type} value={t.type}>
+                  {t.label}
+                </wa-option>
+              )),
+            ])}
           </wa-select>
           <wa-input
             label="Name"
             size="large"
             value={name}
             onInput={(e) => setName(valueOf(e))}
-            placeholder="lower retention wall"
+            placeholder={PLACEHOLDER[type] ?? 'name'}
           />
           <wa-switch
             checked={closed}
