@@ -459,3 +459,9 @@ wa-tab-group.tabs wa-tab-panel {
   flex-direction: column;
   gap: 8px;
 }
+.pick-banner {
+  top: 10px;
+  bottom: auto;
+  border-color: var(--accent);
+  z-index: 2;
+}
