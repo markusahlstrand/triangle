@@ -157,3 +157,45 @@ export async function downloadDxf(siteId: string): Promise<void> {
   a.click();
   URL.revokeObjectURL(a.href);
 }
+
+// ── Members (deployed, owner-only) ───────────────────────────────────────────
+
+export interface Member {
+  principal: string;
+  email: string | null;
+  roles: string[];
+  you: boolean;
+  ownerOfRecord: boolean;
+}
+
+export interface Invite {
+  principal: string;
+  roleKey: string;
+  email: string | null;
+  createdAt?: string;
+  link: { state: 'open' | 'used' | 'revoked' | 'expired'; reason: string | null } | null;
+}
+
+async function call<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, {
+    ...init,
+    headers: init?.body ? { 'Content-Type': 'application/json' } : undefined,
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string; detail?: string };
+    throw new ApiError(res.status, body.detail ?? body.error ?? res.statusText, body);
+  }
+  return (res.status === 204 ? undefined : await res.json()) as T;
+}
+
+export const members = {
+  list: () => call<{ members: Member[] }>('/api/members').then((r) => r.members),
+  remove: (principal: string) => call<void>(`/api/members/${principal}/remove`, { method: 'POST' }),
+  invites: () => call<{ roles: string[]; invites: Invite[] }>('/api/invites'),
+  invite: (roleKey: string, email?: string) =>
+    call<{ principal: string; roleKey: string; email: string | null; acceptUrl: string }>('/api/invites', {
+      method: 'POST',
+      body: JSON.stringify(email ? { roleKey, email } : { roleKey }),
+    }),
+  revokeInvite: (principal: string) => call<void>(`/api/invites/${principal}/revoke`, { method: 'POST' }),
+};

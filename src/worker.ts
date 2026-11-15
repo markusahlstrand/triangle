@@ -235,7 +235,7 @@ async function stub(c: Context<{ Bindings: Env }>): Promise<ScopeStub> {
 async function requireOwner(c: Context<{ Bindings: Env }>): Promise<{ principal: PrincipalId }> {
   const { principal, scope } = await caller(c);
   const who = await scope.invoke<{ role: string }>('garden/whoami', undefined);
-  if (who.role !== OWNER_ROLE_KEY) throw new HTTPException(403, { message: 'only the garden owner can manage invites' });
+  if (who.role !== OWNER_ROLE_KEY) throw new HTTPException(403, { message: 'only the garden owner can manage members' });
   return { principal };
 }
 
@@ -314,6 +314,55 @@ mountInviteRoutes(app, {
     hostFor(env).exchangeCapability(node.tenantId, node.scopeId, secret, { mode: 'become' }),
   becomeLinkStates: (env, node, ids) => hostFor(env).becomeLinkStates(node.tenantId, node.scopeId, ids),
   authProvider: authProviderFor,
+});
+
+/**
+ * Members — who is in this garden and with which role (owner-only). The identity half
+ * (bound logins, the address an invite named) is the directory's; the role half is the
+ * scope's own grants. Open invites are listed by `GET /api/invites` beside this.
+ */
+app.get('/api/members', async (c) => {
+  const node = nodeFor(c.req.raw, c.env);
+  const { principal: me } = await requireOwner(c);
+  const directory = identityDo(c.env, node);
+  const [bindings, holders, owner] = await Promise.all([
+    directory.listMemberBindings(node.scopeId),
+    hostFor(c.env).listScopeRoleHolders(node.tenantId, node.scopeId),
+    directory.getOwnerOfRecord(node.scopeId),
+  ]);
+  const roles = new Map<string, string[]>();
+  for (const h of holders) roles.set(h.principal, [...(roles.get(h.principal) ?? []), h.roleKey]);
+  const members = bindings
+    .filter((b) => b.logins > 0)
+    .map((b) => ({
+      principal: b.principal,
+      email: b.email,
+      roles: roles.get(b.principal) ?? [],
+      you: b.principal === me,
+      ownerOfRecord: b.principal === owner,
+    }));
+  return c.json({ members });
+});
+
+/**
+ * Remove a member (owner-only): their roles go first, bounded by what the owner holds,
+ * then their logins are unbound. The owner of record and the caller themself are
+ * refused — a garden must never be left without its owner.
+ */
+app.post('/api/members/:principal/remove', async (c) => {
+  const node = nodeFor(c.req.raw, c.env);
+  const { principal: me } = await requireOwner(c);
+  const target = principalId.safeParse(c.req.param('principal'));
+  if (!target.success) throw new HTTPException(400, { message: 'not a principal id' });
+  const directory = identityDo(c.env, node);
+  if (target.data === me) throw new HTTPException(409, { message: 'you cannot remove yourself' });
+  if (target.data === (await directory.getOwnerOfRecord(node.scopeId))) {
+    throw new HTTPException(409, { message: "the garden's owner cannot be removed" });
+  }
+  const taken = await hostFor(c.env).revokeScopeRolesBounded(node.tenantId, node.scopeId, me, target.data);
+  if (!taken.coverage.covered) throw new HTTPException(403, { message: 'you do not hold every role this member holds' });
+  await directory.unbindPrincipal(node.scopeId, target.data);
+  return c.body(null, 204);
 });
 
 /**

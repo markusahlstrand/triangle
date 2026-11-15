@@ -20,6 +20,7 @@ import {
   AddPointSheet,
   ConstraintSheet,
   FeatureSheet,
+  MeasurementSheet,
   MirrorSheet,
   PlantSheet,
   ErrorNote,
@@ -32,6 +33,7 @@ import {
   useAction,
 } from './Sheets';
 import type { Feature } from './api';
+import { MembersSheet } from './Members';
 
 // ============================================================================
 // The shell: principal picker in the top bar (the dev cast — every entry is a
@@ -45,6 +47,7 @@ type SheetState =
   | { kind: 'add-point' }
   | { kind: 'add-measurement'; from?: string }
   | { kind: 'point'; id: string }
+  | { kind: 'measurement'; id: string }
   | { kind: 'mirror'; choice: MirrorChoice }
   | { kind: 'constraint' }
   | { kind: 'feature'; feature: Feature | null }
@@ -56,6 +59,7 @@ export default function App() {
   const [sites, setSites] = useState<SiteSummary[] | null>(null);
   const [siteId, setSiteId] = useState<string | null>(null);
   const [site, setSite] = useState<SitePayload | null>(null);
+  const [showMembers, setShowMembers] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const cast = session?.kind === 'dev' ? session.cast : {};
@@ -153,11 +157,22 @@ export default function App() {
           </wa-select>
         )}
         {session?.kind === 'user' && (
-          // Deployed: the account menu reads the same `/api/me` the shell does, and signs
-          // out through `/api/auth/logout`.
-          <sub-user-menu class="user-menu" show="avatar" />
+          // Deployed: the account menu reads the same `/api/me` the shell does, shows the
+          // signed-in address beside the avatar, and signs out through `/api/auth/logout`.
+          // The owner also manages the garden's members from it.
+          <sub-user-menu
+            class="user-menu"
+            show="email"
+            onwa-select={(e: Event) => {
+              const item = (e as CustomEvent<{ item: { value: string } }>).detail?.item;
+              if (item?.value === 'members') setShowMembers(true);
+            }}
+          >
+            {session.me.role === 'garden-owner' && <wa-dropdown-item value="members">Members</wa-dropdown-item>}
+          </sub-user-menu>
         )}
       </div>
+      {showMembers && <MembersSheet onClose={() => setShowMembers(false)} />}
       {error && <ErrorNote>{error}</ErrorNote>}
       {session?.kind === 'anonymous' && (
         <div className="screen">
@@ -352,6 +367,7 @@ function SiteView(props: {
               setSelected(id);
               setSheet({ kind: 'point', id });
             }}
+            onSelectMeasurement={(id) => setSheet({ kind: 'measurement', id })}
             onPickSide={pickSide}
             onTrayPoint={(id) => setSheet({ kind: 'point', id })}
           />
@@ -506,6 +522,16 @@ function SiteView(props: {
           onClose={close}
           onChanged={props.refresh}
           onAddMeasurementFrom={(id) => setSheet({ kind: 'add-measurement', from: id })}
+        />
+      )}
+      {sheet.kind === 'measurement' && (
+        <MeasurementSheet
+          site={site}
+          measurementId={sheet.id}
+          readOnly={readOnly}
+          onClose={close}
+          onChanged={props.refresh}
+          onOpenPoint={(id) => setSheet({ kind: 'point', id })}
         />
       )}
       {sheet.kind === 'mirror' && (

@@ -1,6 +1,7 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Column } from '@substrat-run/elements/entity-table';
 import type { TableSource } from '@substrat-run/elements/entity-table-model';
+import type WaInput from '@awesome.me/webawesome/dist/components/input/input.js';
 import {
   api,
   ApiError,
@@ -128,10 +129,38 @@ function PointPicker(props: {
   selected: string | null;
   onPick: (id: string) => void;
 }) {
-  const points = recentFirst(props.site).filter((p) => !(props.exclude ?? []).includes(p.id));
+  const [query, setQuery] = useState('');
+  const search = useRef<WaInput | null>(null);
+  // A keyboard is there to type with; on a phone, focusing would cover the list. After the
+  // dialog's own initial focus, which lands on its close button.
+  useEffect(() => {
+    if (!matchMedia('(pointer: fine)').matches) return;
+    const t = setTimeout(() => search.current?.focus(), 120);
+    return () => clearTimeout(t);
+  }, []);
+  const q = fold(query.trim());
+  const points = recentFirst(props.site)
+    .filter((p) => !(props.exclude ?? []).includes(p.id))
+    .filter((p) => !q || fold(p.name).includes(q));
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
-      {points.map((p) => (
+    <div className="point-picker">
+      {props.site.points.length > 6 && (
+        <wa-input
+          ref={(el: WaInput) => { search.current = el; }}
+          type="search"
+          size="small"
+          placeholder="Search points"
+          with-clear
+          value={query}
+          onInput={(e) => setQuery(valueOf(e))}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && points[0]) props.onPick(points[0].id);
+          }}
+        />
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
+        {points.length === 0 && <div className="hint">No point matches “{query.trim()}”.</div>}
+        {points.map((p) => (
         <button
           key={p.id}
           className={`pill${props.selected === p.id ? ' selected' : ''}`}
@@ -140,10 +169,14 @@ function PointPicker(props: {
           {p.name}
           <span className="elev">{elevLabel(p)}</span>
         </button>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
+
+/** Case- and accent-insensitive form for matching ("Olivo", "olivo", "OLÍVO" all meet). */
+const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
 // ── Add measurement — the hot path ───────────────────────────────────────────
 
@@ -162,8 +195,11 @@ export function AddMeasurementSheet(props: {
 
   const key = (k: string) => {
     setResult(null);
-    if (k === '⌫') setCm((v) => v.slice(0, -1));
-    else if (cm.length < 6) setCm((v) => (k === '.' && v.includes('.') ? v : v + k));
+    setCm((v) => {
+      if (k === '⌫') return v.slice(0, -1);
+      if (v.length >= 6 || (k === '.' && v.includes('.'))) return v;
+      return v + k;
+    });
   };
 
   const save = async (next: boolean) => {
@@ -194,6 +230,29 @@ export function AddMeasurementSheet(props: {
       else props.onClose();
     }
   };
+
+  // The physical keyboard drives the same keypad once both points are picked: digits,
+  // `.`/`,`, Backspace, and Enter saves (Shift+Enter: save & next). Typing into a real
+  // field elsewhere is left alone.
+  const saveRef = useRef(save);
+  saveRef.current = save;
+  useEffect(() => {
+    if (!a || !b) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      // The real target inside any shadow root: a `wa-input` retargets to its host.
+      const t = (e.composedPath()[0] ?? e.target) as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (/^[0-9]$/.test(e.key)) key(e.key);
+      else if (e.key === '.' || e.key === ',') key('.');
+      else if (e.key === 'Backspace') key('⌫');
+      else if (e.key === 'Enter') void saveRef.current(e.shiftKey);
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [a, b]);
 
   const meters = cm ? (Number(cm) / 100).toFixed(2) : null;
   const overTape = cm !== '' && Number(cm) > 2000;
@@ -316,6 +375,62 @@ export function AddPointSheet(props: {
 }
 
 // ── Point detail (design 08) ─────────────────────────────────────────────────
+
+// ── One tape pull — opened from its line on the map ─────────────────────────
+
+export function MeasurementSheet(props: {
+  site: SitePayload;
+  measurementId: string;
+  readOnly: boolean;
+  onClose: () => void;
+  onChanged: () => Promise<void>;
+  onOpenPoint: (id: string) => void;
+}) {
+  const action = useAction(props.onChanged);
+  const m = props.site.measurements.find((x) => x.id === props.measurementId);
+  if (!m) return null;
+  const a = props.site.points.find((p) => p.id === m.point_a);
+  const b = props.site.points.find((p) => p.id === m.point_b);
+  const r = props.site.solve.measurementResidualsCm[m.id];
+  const cls = r === undefined ? 'none' : r <= 2 ? 'good' : r <= 5 ? 'warn' : 'bad';
+  return (
+    <Sheet title={`${a?.name ?? '?'} ↔ ${b?.name ?? '?'}`} onClose={props.onClose}>
+      {action.error && <ErrorNote>{action.error}</ErrorNote>}
+      <div className="distance-display">
+        {Math.round(m.distance_m * 100)}
+        <span className="unit">cm</span>
+      </div>
+      <div className="meta">
+        <span className={`residual ${cls}`} />{' '}
+        {r === undefined ? 'no residual yet — the network has no redundancy here' : `residual ${r.toFixed(1)} cm`}
+      </div>
+      <div className="actions">
+        {a && (
+          <wa-button appearance="outlined" onClick={() => props.onOpenPoint(a.id)}>
+            {a.name}
+          </wa-button>
+        )}
+        {b && (
+          <wa-button appearance="outlined" onClick={() => props.onOpenPoint(b.id)}>
+            {b.name}
+          </wa-button>
+        )}
+      </div>
+      {!props.readOnly && (
+        <wa-button
+          variant="danger"
+          appearance="outlined"
+          disabled={action.busy}
+          onClick={async () => {
+            if (await action.run(() => api.deleteMeasurement({ measurementId: m.id }))) props.onClose();
+          }}
+        >
+          Delete measurement
+        </wa-button>
+      )}
+    </Sheet>
+  );
+}
 
 export function PointDetailSheet(props: {
   site: SitePayload;

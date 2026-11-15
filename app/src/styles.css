@@ -419,3 +419,43 @@ wa-tab-group.tabs wa-tab-panel {
     border-left: 1px solid var(--border);
   }
 }
+
+/* ── Members ── */
+.member-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-soft);
+}
+.member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+}
+.member-row + .member-row {
+  border-top: 1px solid var(--border-soft);
+}
+.member-who {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.invite-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.invite-link code {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
+/* ── Point picker ── */
+.point-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
