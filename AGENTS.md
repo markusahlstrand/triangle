@@ -365,7 +365,7 @@ with `garden/get-site` AS THE CALLER (so `garden:read` gates it — no key of it
 survey in the system prompt and runs the platform's model host
 (`createModelHost` from `@substrat-run/vertical-host/model`). The credential is the platform's —
 Triangle ships no provider key: Claude Sonnet 5 when the platform holds the Anthropic credential,
-else Workers AI through the `env.AI` binding every pushed vertical gets. Never call a model from
+else Workers AI through `env.AI` — bound only because package.json declares `"usesModels": true` under `substrat` (drop it and the deployed assistant answers "no model"). Never call a model from
 module code (rule 2), and never add a provider key to the project. It reads; it changes nothing.
 ⌘K / Ctrl-K opens it anywhere in a garden. It answers with TOOLS that compute rather than guess
 (`src/analysis.ts`, pure, over the solver): `impossible_measurements` (the triangle inequality over
